@@ -481,22 +481,35 @@ fun MainScreen(
                             }
                             // Over the grid, so it keeps its scroll; taking every touch while the files change.
                             vm.fileJob?.let { job ->
+                                val count = stringResource(
+                                    when (job) {
+                                        FileJob.MOVE -> R.string.moving
+                                        FileJob.COPY -> R.string.copying
+                                        FileJob.TRASH -> R.string.trashing
+                                        FileJob.ROTATE -> R.string.rotating
+                                    },
+                                    formatCount(vm.fileJobDone),
+                                    formatCount(vm.fileJobTotal),
+                                )
+                                // A copy goes by bytes: one large video would hold a count of files still.
+                                val byBytes = vm.fileJobBytes > 0
                                 ProgressState(
-                                    text = stringResource(
-                                        when (job) {
-                                            FileJob.MOVE -> R.string.moving
-                                            FileJob.COPY -> R.string.copying
-                                            FileJob.TRASH -> R.string.trashing
-                                            FileJob.ROTATE -> R.string.rotating
-                                        },
-                                        formatCount(vm.fileJobDone),
-                                        formatCount(vm.fileJobTotal),
-                                    ),
+                                    text = if (byBytes) {
+                                        "$count  ·  ${formatSize(context, vm.fileJobBytesDone)} / ${formatSize(context, vm.fileJobBytes)}"
+                                    } else {
+                                        count
+                                    },
                                     modifier = Modifier
                                         .fillMaxSize()
                                         .background(MaterialTheme.colorScheme.background)
                                         .pointerInput(Unit) { detectTapGestures { } },
-                                    progress = { if (vm.fileJobTotal > 0) vm.fileJobDone.toFloat() / vm.fileJobTotal else 0f },
+                                    progress = {
+                                        when {
+                                            byBytes -> (vm.fileJobBytesDone.toDouble() / vm.fileJobBytes).toFloat()
+                                            vm.fileJobTotal > 0 -> vm.fileJobDone.toFloat() / vm.fileJobTotal
+                                            else -> 0f
+                                        }
+                                    },
                                 )
                             }
                         }

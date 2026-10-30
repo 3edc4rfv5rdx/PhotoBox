@@ -3,6 +3,7 @@ package xx.photobox
 import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
@@ -16,6 +17,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 /** Whether [old] and [new] hold the same files, with the same dates and sizes, in any order. */
 internal fun sameItems(old: List<MediaItem>?, new: List<MediaItem>): Boolean {
@@ -90,6 +92,12 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     var fileJobDone by mutableIntStateOf(0)
         private set
     var fileJobTotal by mutableIntStateOf(0)
+        private set
+
+    /** Bytes through so far of [fileJobBytes], for a job that copies; 0 of 0 for one that does not. */
+    var fileJobBytesDone by mutableLongStateOf(0L)
+        private set
+    var fileJobBytes by mutableLongStateOf(0L)
         private set
 
     /** Whether files are being changed — the trash, or the album's files moved, copied or trashed — so nothing else starts meanwhile. */
@@ -333,7 +341,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         if (busy || files.isEmpty()) return
         trashBusy = true
         viewModelScope.launch {
-            val failed = runFileJob(FileJob.TRASH, files) { file ->
+            val failed = runFileJob(FileJob.TRASH, files) { file, _ ->
                 val group = listOf(file) + companionsOf(file)
                 val trashDir = volumeRootOf(getApplication(), file)?.let(Trash::dirOn)
                 if (trashDir != null && Trash.moveToTrash(file, trashDir, System.currentTimeMillis())) {
@@ -366,9 +374,9 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
             val job = if (mode == Transfer.MOVE) FileJob.MOVE else FileJob.COPY
             // Moved by copy, but the original would not go: the file is now in both places.
             val leftBehind = AtomicInteger(0)
-            val failed = runFileJob(job, groups) { file ->
+            val failed = runFileJob(job, groups, sizeOf = ::groupSize) { file, onBytes ->
                 val group = listOf(file) + companionsOf(file)
-                transferGroup(group, dir, mode)?.let { done ->
+                transferGroup(group, dir, mode, onBytes)?.let { done ->
                     if (done.left.isNotEmpty()) leftBehind.incrementAndGet()
                     done.targets.map { it.path } + if (mode == Transfer.MOVE) group.map { it.path } else emptyList()
                 }
@@ -392,7 +400,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         val turnable = files.filter(::canRotate)
         if (busy || turnable.isEmpty()) return
         viewModelScope.launch {
-            val failed = runFileJob(FileJob.ROTATE, turnable) { file ->
+            val failed = runFileJob(FileJob.ROTATE, turnable) { file, _ ->
                 if (rotateClockwise(file)) listOf(file.path) else null
             }
             if (failed > 0) notice = FileNotice.ROTATE_FAILED
@@ -432,28 +440,46 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
 
     /**
      * Runs [step] on each of [files] off the main thread as [job], counting
-     * them into [fileJobDone]. A step returns the paths it changed, for the
-     * system's media index, or null when it failed. How many failed.
+     * them into [fileJobDone]. With [sizeOf], the bytes are counted too, into
+     * [fileJobBytesDone]: a step hands each piece it copies to the callback it
+     * is given, and a file done counts whole, however it went. A step returns
+     * the paths it changed, for the system's media index, or null when it
+     * failed. How many failed.
      */
-    private suspend fun runFileJob(job: FileJob, files: List<File>, step: (File) -> List<String>?): Int {
+    private suspend fun runFileJob(
+        job: FileJob,
+        files: List<File>,
+        sizeOf: ((File) -> Long)? = null,
+        step: (File, onBytes: (Long) -> Unit) -> List<String>?,
+    ): Int {
         fileJob = job
         fileJobTotal = files.size
         fileJobDone = 0
+        fileJobBytesDone = 0L
+        fileJobBytes = 0L
         val done = AtomicInteger(0)
+        val bytes = AtomicLong(0L)
         return coroutineScope {
             // Counted on the worker, shown from here: Compose state is not written from other threads.
             val ticker = launch {
                 while (true) {
                     fileJobDone = done.get()
+                    fileJobBytesDone = bytes.get()
                     delay(PROGRESS_TICK_MS)
                 }
             }
+            val sizes = if (sizeOf != null) withContext(Dispatchers.IO) { files.map(sizeOf) } else null
+            fileJobBytes = sizes?.sum() ?: 0L
             val failed = withContext(Dispatchers.IO) {
                 val changed = mutableListOf<String>()
                 var failed = 0
-                for (file in files) {
-                    val paths = step(file)
+                var finished = 0L
+                for ((k, file) in files.withIndex()) {
+                    val paths = step(file) { bytes.addAndGet(it) }
                     if (paths == null) failed++ else changed += paths
+                    // Whole, whether renamed in a moment, copied, or given up part-way.
+                    finished += sizes?.get(k) ?: 0L
+                    bytes.set(finished)
                     done.incrementAndGet()
                 }
                 announceChanged(getApplication(), changed)
@@ -548,3 +574,6 @@ enum class FileJob { MOVE, COPY, TRASH, ROTATE }
 enum class FileNotice { DELETE_FAILED, RESTORE_EXISTS, RESTORE_FAILED, RESTORE_SOME_LEFT, MOVE_FAILED, MOVE_LEFT_ORIGINALS, COPY_FAILED, ROTATE_FAILED }
 
 private const val DAY_MS = 24L * 60 * 60 * 1000
+
+/** What moving or copying [file] takes: it and the RAW files that go with it. */
+private fun groupSize(file: File): Long = (listOf(file) + companionsOf(file)).sumOf { it.length() }

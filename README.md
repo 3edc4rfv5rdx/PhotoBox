@@ -52,7 +52,8 @@ Work in progress, built to `TZ.md`.
   " (2)" … — the same number on a photo and its RAW — so nothing is
   overwritten. Onto the SD card from the phone, or back, a move is a copy
   followed by deleting the original once the copy is whole. Moving, copying
-  and trashing many files show how far they have got.
+  and trashing many files show how far they have got — moving and copying by
+  bytes, with the sizes.
 - **Viewer**: a tap on a thumbnail opens it full screen, in the grid's order.
   Swipe to the next or previous file; pinch or double-tap to zoom, and drag
   while zoomed. A tap hides or shows the bar on top, whose ⋮ shares, turns,

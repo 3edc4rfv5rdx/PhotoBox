@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Moving and copying show their progress by bytes, with the sizes, so a large video copied to the SD card moves the bar
 - E: Renaming the photo a slideshow stopped on no longer makes the next one start over
 - F: A file opened from another app shows how many dates of its folder are left to read, the way an album does
 - F: Settings set the thumbnails across too, for a TV remote that cannot pinch

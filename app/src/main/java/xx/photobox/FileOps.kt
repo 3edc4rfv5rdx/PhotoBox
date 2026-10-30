@@ -5,6 +5,7 @@ import java.io.File
 import java.io.IOException
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
+import java.nio.file.StandardOpenOption
 
 /** Each of [from] to the same place in [to], all or none: a failure puts back those already moved. */
 fun renameAll(from: List<File>, to: List<File>): Boolean {
@@ -89,13 +90,13 @@ enum class Transfer { MOVE, COPY }
  * already there. A move is a rename where it can be; onto another volume,
  * where a rename cannot go, it is a copy, and the originals are deleted once
  * every copy is whole. All or none: should one file not go, what was already
- * done is undone. Null on failure.
+ * done is undone. A copy reports each piece written to [onBytes]. Null on failure.
  */
-fun transferGroup(files: List<File>, dir: File, mode: Transfer): Transferred? {
+fun transferGroup(files: List<File>, dir: File, mode: Transfer, onBytes: (Long) -> Unit = {}): Transferred? {
     if (files.isEmpty()) return null
     val targets = freeTargets(files, dir)
     if (mode == Transfer.MOVE && renameAll(files, targets)) return Transferred(targets, emptyList())
-    if (!copyAll(files, targets)) return null
+    if (!copyAll(files, targets, onBytes)) return null
     val left = if (mode == Transfer.MOVE) files.filter { !it.delete() && it.exists() } else emptyList()
     return Transferred(targets, left)
 }
@@ -127,10 +128,10 @@ internal fun numberedName(name: String, n: Int): String {
 }
 
 /** Each of [from] copied to the same place in [to], all or none: a failure deletes the copies already made. */
-private fun copyAll(from: List<File>, to: List<File>): Boolean {
+private fun copyAll(from: List<File>, to: List<File>, onBytes: (Long) -> Unit): Boolean {
     val made = mutableListOf<File>()
     for ((source, target) in from.zip(to)) {
-        if (!copyFile(source, target)) {
+        if (!copyFile(source, target, onBytes)) {
             made.forEach { it.delete() }
             return false
         }
@@ -139,13 +140,26 @@ private fun copyAll(from: List<File>, to: List<File>): Boolean {
     return true
 }
 
+/** How much of a file is copied at a time, and reported to the progress. */
+private const val COPY_BUFFER = 256 * 1024
+
 /**
  * [from] copied to [to], which must not exist yet, with [from]'s time kept:
- * the grid falls back on it for a file with no date of its own. A part-made
- * copy is deleted.
+ * the grid falls back on it for a file with no date of its own. Each piece
+ * written goes to [onBytes]. A part-made copy is deleted.
  */
-private fun copyFile(from: File, to: File): Boolean = try {
-    Files.copy(from.toPath(), to.toPath())
+private fun copyFile(from: File, to: File, onBytes: (Long) -> Unit): Boolean = try {
+    from.inputStream().use { input ->
+        Files.newOutputStream(to.toPath(), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use { output ->
+            val buffer = ByteArray(COPY_BUFFER)
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                output.write(buffer, 0, read)
+                onBytes(read.toLong())
+            }
+        }
+    }
     to.setLastModified(from.lastModified())
     true
 } catch (e: IOException) {
