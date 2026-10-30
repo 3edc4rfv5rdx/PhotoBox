@@ -29,6 +29,9 @@ object AppSettings {
     private const val KEY_THEME = "theme_mode"
     private const val KEY_ACCENT = "accent_index"
     private const val KEY_LANGUAGE = "language"
+    private const val KEY_SHOW_HIDDEN = "show_hidden"
+    private const val KEY_ALBUM_ORDER = "album_order"
+    private const val KEY_ALBUM_PATH = "album_path"
 
     private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
@@ -36,10 +39,19 @@ object AppSettings {
     private val _accentIndex = MutableStateFlow(0)
     val accentIndex: StateFlow<Int> = _accentIndex.asStateFlow()
 
+    /** Whether albums under a dot-folder or a .nomedia file are listed. */
+    private val _showHidden = MutableStateFlow(false)
+    val showHidden: StateFlow<Boolean> = _showHidden.asStateFlow()
+
+    private val _albumOrder = MutableStateFlow(AlbumOrder.NAME)
+    val albumOrder: StateFlow<AlbumOrder> = _albumOrder.asStateFlow()
+
     fun load(context: Context) {
         val prefs = prefs(context)
         _themeMode.value = enumOr(prefs.getString(KEY_THEME, null), ThemeMode.SYSTEM)
         _accentIndex.value = prefs.getInt(KEY_ACCENT, 0).coerceIn(0, ACCENT_COUNT - 1)
+        _showHidden.value = prefs.getBoolean(KEY_SHOW_HIDDEN, false)
+        _albumOrder.value = enumOr(prefs.getString(KEY_ALBUM_ORDER, null), AlbumOrder.NAME)
     }
 
     fun setThemeMode(context: Context, mode: ThemeMode) {
@@ -51,6 +63,23 @@ object AppSettings {
         val clamped = index.coerceIn(0, ACCENT_COUNT - 1)
         _accentIndex.value = clamped
         prefs(context).edit { putInt(KEY_ACCENT, clamped) }
+    }
+
+    fun setShowHidden(context: Context, enabled: Boolean) {
+        _showHidden.value = enabled
+        prefs(context).edit { putBoolean(KEY_SHOW_HIDDEN, enabled) }
+    }
+
+    fun setAlbumOrder(context: Context, order: AlbumOrder) {
+        _albumOrder.value = order
+        prefs(context).edit { putString(KEY_ALBUM_ORDER, order.name) }
+    }
+
+    /** The album open last, kept across launches. Null before one was ever opened. */
+    fun albumPath(context: Context): String? = prefs(context).getString(KEY_ALBUM_PATH, null)
+
+    fun setAlbumPath(context: Context, path: String) {
+        prefs(context).edit { putString(KEY_ALBUM_PATH, path) }
     }
 
     /**

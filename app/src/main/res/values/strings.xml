@@ -22,4 +22,27 @@
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>
     <string name="language_system">System</string>
+    <string name="albums_scanning">Looking for albums</string>
+    <string name="albums_none">No photos or videos found</string>
+    <string name="no_album_open">No album open</string>
+    <string name="new_album">New album</string>
+    <string name="album_name">Name</string>
+    <string name="album_parent">Folder for the new album</string>
+    <string name="album_parent_change">Change folder</string>
+    <string name="album_name_invalid">The name can not contain a slash</string>
+    <string name="album_name_exists">Something with that name is already there</string>
+    <string name="album_create_failed">Could not create the folder</string>
+    <string name="create">Create</string>
+    <string name="sort">Sort</string>
+    <string name="order_name">By name</string>
+    <string name="order_date">Newest first</string>
+    <string name="order_count">Most files first</string>
+    <string name="setting_show_hidden">Show hidden folders</string>
+    <string name="folder_up">Up</string>
+    <string name="folder_use_this">Use this folder</string>
+    <string name="folder_no_subfolders">No folders inside</string>
+    <plurals name="file_count">
+        <item quantity="one">%1$s file</item>
+        <item quantity="other">%1$s files</item>
+    </plurals>
 </resources>

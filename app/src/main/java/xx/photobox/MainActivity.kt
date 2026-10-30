@@ -8,13 +8,13 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.graphics.drawable.toDrawable
@@ -34,8 +34,7 @@ val UPDATER_CONFIG = UpdaterConfig(appKey = "photobox", repo = "PhotoBox")
 
 class MainActivity : ComponentActivity() {
 
-    /** Read again on every resume: the grant is flipped in system Settings, outside the app. */
-    private val hasStorageAccess = mutableStateOf(hasAllFilesAccess())
+    private val viewModel by viewModels<GalleryViewModel>()
 
     // The result code from this one is meaningless: the Settings screen for
     // "All files access" does not report back whether the switch was
@@ -65,7 +64,7 @@ class MainActivity : ComponentActivity() {
             PhotoBoxTheme(themeMode, accentIndex) {
                 Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     MainScreen(
-                        hasStorageAccess = hasStorageAccess.value,
+                        vm = viewModel,
                         onGrantAccess = { requestAllFilesAccess.launch(allFilesAccessIntent(this)) },
                         onExit = ::finish,
                         onAbout = ::showAbout,
@@ -77,7 +76,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        hasStorageAccess.value = hasAllFilesAccess()
+        viewModel.refreshStorageAccess()
     }
 
     /**

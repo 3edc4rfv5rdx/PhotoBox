@@ -22,4 +22,29 @@
     <string name="theme_light">Светлая</string>
     <string name="theme_dark">Тёмная</string>
     <string name="language_system">Системный</string>
+    <string name="albums_scanning">Поиск альбомов</string>
+    <string name="albums_none">Фото и видео не найдены</string>
+    <string name="no_album_open">Альбом не открыт</string>
+    <string name="new_album">Новый альбом</string>
+    <string name="album_name">Имя</string>
+    <string name="album_parent">Папка для нового альбома</string>
+    <string name="album_parent_change">Сменить папку</string>
+    <string name="album_name_invalid">В имени не может быть косой черты</string>
+    <string name="album_name_exists">Здесь уже есть что-то с таким именем</string>
+    <string name="album_create_failed">Не удалось создать папку</string>
+    <string name="create">Создать</string>
+    <string name="sort">Сортировка</string>
+    <string name="order_name">По имени</string>
+    <string name="order_date">Сначала новые</string>
+    <string name="order_count">Сначала большие</string>
+    <string name="setting_show_hidden">Показывать скрытые папки</string>
+    <string name="folder_up">Вверх</string>
+    <string name="folder_use_this">Выбрать эту папку</string>
+    <string name="folder_no_subfolders">Папок внутри нет</string>
+    <plurals name="file_count">
+        <item quantity="one">%1$s файл</item>
+        <item quantity="few">%1$s файла</item>
+        <item quantity="many">%1$s файлов</item>
+        <item quantity="other">%1$s файла</item>
+    </plurals>
 </resources>

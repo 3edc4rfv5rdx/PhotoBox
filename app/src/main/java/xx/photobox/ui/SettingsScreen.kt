@@ -39,13 +39,14 @@ import xx.photobox.supportedLanguages
 /** Which editor is open; only one can be at a time. */
 private enum class Editing { NONE, THEME, ACCENT, LANGUAGE }
 
-/** Theme, accent colour, language and the start-up update check. */
+/** Theme, accent colour, language, the start-up update check and whether hidden albums are listed. */
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val activity = LocalActivity.current
     val themeMode by AppSettings.themeMode.collectAsState()
     val accentIndex by AppSettings.accentIndex.collectAsState()
+    val showHidden by AppSettings.showHidden.collectAsState()
 
     val systemLabel = stringResource(R.string.language_system)
     val languages = remember(context, systemLabel) { supportedLanguages(context, systemLabel) }
@@ -92,6 +93,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             updateCheck = it
             Updater.setEnabled(context, it)
         }
+        HorizontalDivider()
+        SwitchRow(stringResource(R.string.setting_show_hidden), showHidden) { AppSettings.setShowHidden(context, it) }
     }
 
     when (editing) {

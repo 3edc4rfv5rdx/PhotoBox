@@ -22,4 +22,29 @@
     <string name="theme_light">Світла</string>
     <string name="theme_dark">Темна</string>
     <string name="language_system">Системна</string>
+    <string name="albums_scanning">Пошук альбомів</string>
+    <string name="albums_none">Фото і відео не знайдено</string>
+    <string name="no_album_open">Альбом не відкрито</string>
+    <string name="new_album">Новий альбом</string>
+    <string name="album_name">Назва</string>
+    <string name="album_parent">Папка для нового альбому</string>
+    <string name="album_parent_change">Змінити папку</string>
+    <string name="album_name_invalid">У назві не може бути скісної риски</string>
+    <string name="album_name_exists">Тут уже є щось із такою назвою</string>
+    <string name="album_create_failed">Не вдалося створити папку</string>
+    <string name="create">Створити</string>
+    <string name="sort">Сортування</string>
+    <string name="order_name">За назвою</string>
+    <string name="order_date">Спочатку нові</string>
+    <string name="order_count">Спочатку великі</string>
+    <string name="setting_show_hidden">Показувати приховані папки</string>
+    <string name="folder_up">Вгору</string>
+    <string name="folder_use_this">Вибрати цю папку</string>
+    <string name="folder_no_subfolders">Папок усередині немає</string>
+    <plurals name="file_count">
+        <item quantity="one">%1$s файл</item>
+        <item quantity="few">%1$s файли</item>
+        <item quantity="many">%1$s файлів</item>
+        <item quantity="other">%1$s файлу</item>
+    </plurals>
 </resources>

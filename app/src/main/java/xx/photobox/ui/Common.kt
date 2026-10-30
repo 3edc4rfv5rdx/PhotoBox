@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import xx.photobox.ACCENT_COUNT
 import xx.photobox.R
 import xx.photobox.ThemeMode
+import java.text.NumberFormat
 
 // ---------- Theme ----------
 
@@ -126,6 +127,11 @@ fun PhotoBoxTheme(themeMode: ThemeMode, accentIndex: Int, content: @Composable (
     )
     MaterialTheme(colorScheme = scheme, content = content)
 }
+
+// ---------- Text ----------
+
+/** A count in the device's own digit grouping. */
+fun formatCount(n: Int): String = NumberFormat.getIntegerInstance().format(n)
 
 // ---------- Small controls ----------
 

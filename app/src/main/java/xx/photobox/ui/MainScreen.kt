@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
@@ -20,6 +21,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,13 +30,17 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import xx.photobox.AlbumOrder
+import xx.photobox.AppSettings
+import xx.photobox.GalleryViewModel
 import xx.photobox.R
 
 /** The screens besides the album's thumbnails, each opened from the ⋮ menu or the title. */
-private enum class Screen { THUMBNAILS, ALBUMS, TRASH, SETTINGS }
+private enum class Screen { THUMBNAILS, ALBUMS, NEW_ALBUM_PARENT, TRASH, SETTINGS }
 
 /**
  * The whole app: the open album's thumbnails, with ✕ to leave on the left, the
@@ -42,22 +49,70 @@ private enum class Screen { THUMBNAILS, ALBUMS, TRASH, SETTINGS }
  */
 @Composable
 fun MainScreen(
-    hasStorageAccess: Boolean,
+    vm: GalleryViewModel,
     onGrantAccess: () -> Unit,
     onExit: () -> Unit,
     onAbout: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val context = LocalContext.current
+    val albumOrder by AppSettings.albumOrder.collectAsState()
+    val showHidden by AppSettings.showHidden.collectAsState()
     // Saveable: picking a language recreates the activity, and a plain
     // remember would drop the user back on the thumbnails mid-Settings.
-    var screen by rememberSaveable { mutableStateOf(Screen.THUMBNAILS) }
+    // With nothing to show — a first launch without a camera folder — the
+    // album list is where to start.
+    var screen by rememberSaveable {
+        mutableStateOf(if (vm.hasStorageAccess && vm.album == null) Screen.ALBUMS else Screen.THUMBNAILS)
+    }
     var menuOpen by remember { mutableStateOf(false) }
+    var choosingOrder by remember { mutableStateOf(false) }
     val backToThumbnails = { screen = Screen.THUMBNAILS }
+
+    LaunchedEffect(screen) {
+        if (screen == Screen.ALBUMS) vm.scanAlbums()
+    }
 
     Box(modifier.fillMaxSize()) {
         when (screen) {
-            Screen.ALBUMS -> AppScreen(title = stringResource(R.string.albums), onBack = backToThumbnails) {
-                EmptyState(icon = null, title = stringResource(R.string.not_ready))
+            Screen.ALBUMS -> AppScreen(
+                title = stringResource(R.string.albums),
+                onBack = backToThumbnails,
+                actions = {
+                    IconButton(onClick = { choosingOrder = true }, modifier = Modifier.size(LARGE_BUTTON)) {
+                        Icon(Icons.AutoMirrored.Filled.Sort, stringResource(R.string.sort), Modifier.size(LARGE_ICON))
+                    }
+                    IconButton(onClick = vm::startDraft, modifier = Modifier.size(LARGE_BUTTON)) {
+                        Icon(Icons.Filled.Add, stringResource(R.string.new_album), Modifier.size(LARGE_ICON))
+                    }
+                },
+            ) {
+                AlbumsScreen(
+                    albums = vm.albums,
+                    scanning = vm.scanning,
+                    order = albumOrder,
+                    showHidden = showHidden,
+                    current = vm.album,
+                    onOpen = {
+                        vm.openAlbum(it)
+                        screen = Screen.THUMBNAILS
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            Screen.NEW_ALBUM_PARENT -> AppScreen(
+                title = stringResource(R.string.album_parent),
+                onBack = { screen = Screen.ALBUMS },
+            ) {
+                FolderPickerScreen(
+                    start = vm.draft?.parent,
+                    onPick = {
+                        vm.setDraftParent(it)
+                        screen = Screen.ALBUMS
+                    },
+                    modifier = Modifier.weight(1f),
+                )
             }
 
             Screen.TRASH -> AppScreen(title = stringResource(R.string.trash), onBack = backToThumbnails) {
@@ -84,29 +139,29 @@ fun MainScreen(
                     IconButton(onClick = onExit, modifier = Modifier.size(LARGE_BUTTON)) {
                         Icon(Icons.Filled.Close, stringResource(R.string.exit), Modifier.size(LARGE_ICON))
                     }
-                    // The album's name once albums exist; tapping it is the quick way to another one.
+                    // The quick way to another album.
                     Text(
-                        text = stringResource(R.string.app_name),
+                        text = vm.album?.name ?: stringResource(R.string.app_name),
                         style = MaterialTheme.typography.titleLarge,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier
                             .weight(1f)
-                            .clickable(enabled = hasStorageAccess) { screen = Screen.ALBUMS }
+                            .clickable(enabled = vm.hasStorageAccess) { screen = Screen.ALBUMS }
                             .padding(horizontal = 8.dp, vertical = 12.dp),
                     )
                     Box {
                         MoreButton(onClick = { menuOpen = true })
                         AppMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                            AppMenuItem(stringResource(R.string.albums), enabled = hasStorageAccess) {
+                            AppMenuItem(stringResource(R.string.albums), enabled = vm.hasStorageAccess) {
                                 menuOpen = false
                                 screen = Screen.ALBUMS
                             }
-                            AppMenuItem(stringResource(R.string.trash), enabled = hasStorageAccess) {
+                            AppMenuItem(stringResource(R.string.trash), enabled = vm.hasStorageAccess) {
                                 menuOpen = false
                                 screen = Screen.TRASH
                             }
-                            // Runs through the open album; there is none to run through yet.
+                            // Runs through the open album once thumbnails are in.
                             AppMenuItem(stringResource(R.string.slideshow), enabled = false) {
                                 menuOpen = false
                             }
@@ -117,17 +172,55 @@ fun MainScreen(
                         }
                     }
                 }
-                if (hasStorageAccess) {
-                    EmptyState(icon = null, title = stringResource(R.string.not_ready))
-                } else {
-                    EmptyState(
+                when {
+                    !vm.hasStorageAccess -> EmptyState(
                         icon = null,
                         title = stringResource(R.string.need_storage_access),
                         message = stringResource(R.string.need_storage_access_hint),
                         action = { Button(onClick = onGrantAccess) { Text(stringResource(R.string.grant_access)) } },
                     )
+
+                    vm.album == null -> EmptyState(
+                        icon = null,
+                        title = stringResource(R.string.no_album_open),
+                        action = { Button(onClick = { screen = Screen.ALBUMS }) { Text(stringResource(R.string.albums)) } },
+                    )
+
+                    else -> EmptyState(icon = null, title = stringResource(R.string.not_ready))
                 }
             }
         }
     }
+
+    if (screen == Screen.ALBUMS) {
+        vm.draft?.let { draft ->
+            NewAlbumDialog(
+                draft = draft,
+                failed = vm.createFailed,
+                onName = vm::editDraft,
+                onPickParent = { screen = Screen.NEW_ALBUM_PARENT },
+                onCreate = { vm.createAlbum(onCreated = backToThumbnails) },
+                onDismiss = vm::cancelDraft,
+            )
+        }
+        if (choosingOrder) {
+            ChoiceDialog(
+                title = stringResource(R.string.sort),
+                options = AlbumOrder.entries,
+                selected = albumOrder,
+                label = { stringResource(it.labelRes()) },
+                onDismiss = { choosingOrder = false },
+                onPick = {
+                    AppSettings.setAlbumOrder(context, it)
+                    choosingOrder = false
+                },
+            )
+        }
+    }
+}
+
+private fun AlbumOrder.labelRes(): Int = when (this) {
+    AlbumOrder.NAME -> R.string.order_name
+    AlbumOrder.DATE -> R.string.order_date
+    AlbumOrder.COUNT -> R.string.order_count
 }
