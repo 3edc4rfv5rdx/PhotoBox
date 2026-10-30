@@ -2,6 +2,7 @@ package xx.photobox
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -35,10 +36,19 @@ class AlbumsTest {
     }
 
     @Test
-    fun folderWithoutMediaIsNoAlbum() {
+    fun folderWithOtherFilesIsNoAlbumButAnEmptyOneIs() {
         file("Documents/a.pdf")
         File(tmp.root, "Empty").mkdirs()
-        assertTrue(scan().isEmpty())
+        val albums = scan()
+        assertEquals(setOf("Empty"), albums.keys)
+        assertEquals(0, albums.getValue("Empty").count)
+        assertNull(albums.getValue("Empty").cover)
+    }
+
+    @Test
+    fun anEmptyRootIsNoAlbum() {
+        val root = File(tmp.root, "Pictures").apply { mkdirs() }
+        assertTrue(AlbumScanner.scan(listOf(root)) {}.isEmpty())
     }
 
     @Test
@@ -47,7 +57,7 @@ class AlbumsTest {
         file("A/new.jpg", modified = 5_000L)
         file("A/mid.jpg", modified = 3_000L)
         val album = scan().getValue("A")
-        assertEquals("new.jpg", album.cover.name)
+        assertEquals("new.jpg", album.cover?.name)
         assertEquals(5_000L, album.modified)
     }
 

@@ -180,6 +180,7 @@ fun MainScreen(
                         screen = Screen.THUMBNAILS
                     },
                     // Whole volumes, searched for want of roots, are not the user's to remove.
+                    onNewAlbum = vm::startDraft,
                     onRemoveRoot = if (roots.isEmpty()) {
                         null
                     } else {

@@ -4,17 +4,18 @@ import java.io.File
 import java.nio.file.Files
 
 /**
- * A folder with photos or videos directly in it. [count] and [cover] cover
- * those files alone, not the folders below. [cover] is the newest of them by
- * the file's own time: the date taken would mean reading every file's EXIF on
- * every scan. [hidden] is set when the folder or one above it starts with a dot
+ * A folder with photos or videos directly in it, or with nothing in it at all
+ * — a new album, waiting for files. [count] and [cover] cover those files
+ * alone, not the folders below. [cover] is the newest of them by the file's
+ * own time: the date taken would mean reading every file's EXIF on every
+ * scan; null for an empty album, whose [modified] is the folder's own. [hidden] is set when the folder or one above it starts with a dot
  * or holds a .nomedia file — the same reach other galleries give .nomedia.
  */
 class Album(
     val dir: File,
     val root: File,
     val count: Int,
-    val cover: File,
+    val cover: File?,
     val modified: Long,
     val hidden: Boolean,
 )
@@ -59,8 +60,13 @@ object AlbumScanner {
             }
         }
         // A music album's pictures are its covers, not photos anyone is after;
-        // the folders below it are still looked through.
-        if (cover != null && !music) found += Album(dir, root, count, cover, coverModified, hidden)
+        // the folders below it are still looked through. An empty folder is
+        // an album just made — but not a root, which is a section of its own.
+        when {
+            music -> {}
+            cover != null -> found += Album(dir, root, count, cover, coverModified, hidden)
+            children.isEmpty() && dir != root -> found += Album(dir, root, 0, null, dir.lastModified(), hidden)
+        }
     }
 }
 

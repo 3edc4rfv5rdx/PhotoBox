@@ -234,11 +234,13 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
-    fun startDraft() {
+    /** Opens the new-album dialog on [parent], or on the first search root, so the new album is found where it is made. */
+    fun startDraft(parent: File? = null) {
         createFailed = false
-        // Into the first search root, so the new album is found where it is made.
-        val parent = AppSettings.roots.value.firstOrNull()?.let(::File)?.takeIf { it.isDirectory } ?: defaultAlbumParent()
-        draft = AlbumDraft("", parent)
+        draft = AlbumDraft(
+            "",
+            parent ?: AppSettings.roots.value.firstOrNull()?.let(::File)?.takeIf { it.isDirectory } ?: defaultAlbumParent(),
+        )
     }
 
     fun editDraft(name: String) {
@@ -255,8 +257,8 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /**
-     * Makes the folder and opens it. It is not added to [albums]: an empty
-     * folder is no album until something is put in it, and the next scan says so.
+     * Makes the folder and opens it. It is not added to [albums] here: the
+     * next scan finds it, an empty album.
      */
     fun createAlbum(onCreated: () -> Unit) {
         val current = draft ?: return
