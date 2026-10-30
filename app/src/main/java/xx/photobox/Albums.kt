@@ -45,7 +45,7 @@ object AlbumScanner {
             if (child.isDirectory) {
                 // The trash is reached through the trash screen, never as an
                 // album; a link could lead back up the tree and never end.
-                if (child.name == TRASH_DIR_NAME || Files.isSymbolicLink(child.toPath())) continue
+                if (Trash.isTrashDir(child) || Files.isSymbolicLink(child.toPath())) continue
                 walk(child, root, hidden, checkCancel, found)
             } else if (isAudio(child)) {
                 music = true

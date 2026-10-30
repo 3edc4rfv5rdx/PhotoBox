@@ -36,13 +36,14 @@ Work in progress, built to `TZ.md`.
   time and a seek bar, hidden and shown by a tap — or in another app with
   "Video player" set to that in Settings.
 - **Trash**: the viewer's ⋮ → To trash moves the file — and a RAW beside it
-  under the same name — into a hidden `.PhotoTrash` folder in its own folder,
-  which other galleries pass by; the viewer moves on to the next one. ⋮ →
-  Trash lists everything in the trashes of the search folders, with where it
-  goes back to and when it was deleted. A tap restores a file or deletes it
-  for good; the bar on top restores or deletes everything. A file is deleted
-  for good once it has been in the trash longer than set in Settings — 30
-  days unless changed — checked at each start.
+  under the same name — into the trash of its storage, `Documents/PhotoBox/.Trash`
+  on the phone or the SD card, which other galleries pass by; the viewer moves
+  on to the next one. ⋮ → Trash lists it all under how many files and how
+  much room: what each is, where it goes back to and when it was deleted. A
+  tap opens one full screen, swiping through the trash; its ⋮ restores it or
+  deletes it for good. The bar on top restores or deletes everything, with
+  progress. A file is deleted for good once it has been in the trash longer
+  than set in Settings — 30 days unless changed — checked at each start.
 - **Info**: the viewer's ⋮ menu and the slideshow's (i) show a file's name,
   folder, size, picture size, length of a video, when it was taken and last
   changed, the camera and its settings, and where it was taken — a tap on

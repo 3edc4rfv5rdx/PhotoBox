@@ -13,32 +13,23 @@ class TrashTest {
     @get:Rule
     val tmp = TemporaryFolder()
 
+    private val trash get() = Trash.dirOn(tmp.root)
+
     private fun file(path: String, text: String = "x"): File =
         File(tmp.root, path).apply {
             parentFile!!.mkdirs()
             writeText(text)
         }
 
-    private fun list() = Trash.list(listOf(tmp.root)) {}
+    private fun list() = Trash.list(listOf(trash))
 
     @Test
-    fun trashNameKeepsTheTimeAndTheWholeName() {
-        assertEquals("123-a-b.jpg", Trash.trashName("a-b.jpg", 123))
-        assertEquals(123L to "a-b.jpg", Trash.parseTrashName("123-a-b.jpg"))
-        assertNull(Trash.parseTrashName("photo.jpg"))
-        assertNull(Trash.parseTrashName("12x-a.jpg"))
-        assertNull(Trash.parseTrashName("-a.jpg"))
-        assertNull(Trash.parseTrashName("123-"))
-    }
-
-    @Test
-    fun aTrashedFileGoesIntoItsFoldersHiddenTrashAndComesBack() {
+    fun aTrashedFileGoesIntoTheVolumesTrashAndComesBack() {
         val photo = file("DCIM/Camera/a.jpg", "photo")
-        assertTrue(Trash.moveToTrash(photo, now = 1000))
+        assertTrue(Trash.moveToTrash(photo, trash, now = 1000))
         assertFalse(photo.exists())
-        val dir = File(tmp.root, "DCIM/Camera/$TRASH_DIR_NAME")
-        assertTrue(File(dir, NOMEDIA_NAME).exists())
-        assertTrue(File(dir, "1000-a.jpg").exists())
+        assertTrue(File(trash, NOMEDIA_NAME).exists())
+        assertTrue(File(trash, "1000.jpg").exists())
 
         val entry = list().single()
         assertEquals(photo, entry.original)
@@ -46,8 +37,7 @@ class TrashTest {
 
         assertEquals(RestoreResult.OK, Trash.restore(entry))
         assertEquals("photo", photo.readText())
-        // Nothing but the .nomedia left: the trash folder goes too.
-        assertFalse(dir.exists())
+        assertTrue(list().isEmpty())
     }
 
     @Test
@@ -55,7 +45,7 @@ class TrashTest {
         val photo = file("A/IMG_1.jpg")
         val raw = file("A/IMG_1.DNG")
         file("A/IMG_2.dng")
-        Trash.moveToTrash(photo, now = 5)
+        Trash.moveToTrash(photo, trash, now = 5)
         assertFalse(raw.exists())
         val entry = list().single()
         assertEquals(1, entry.companions.size)
@@ -66,7 +56,7 @@ class TrashTest {
     @Test
     fun restoreOntoATakenNameMovesNothing() {
         val photo = file("A/a.jpg", "old")
-        Trash.moveToTrash(photo, now = 1)
+        Trash.moveToTrash(photo, trash, now = 1)
         file("A/a.jpg", "new")
         val entry = list().single()
         assertEquals(RestoreResult.EXISTS, Trash.restore(entry))
@@ -75,25 +65,71 @@ class TrashTest {
     }
 
     @Test
-    fun theSameNameTrashedTwiceKeepsBoth() {
-        Trash.moveToTrash(file("A/a.jpg", "first"), now = 1)
-        Trash.moveToTrash(file("A/a.jpg", "second"), now = 2)
-        val entries = list()
-        assertEquals(listOf(2L, 1L), entries.map { it.deletedAt })
+    fun restoreMakesAFolderDeletedMeanwhileAgain() {
+        val photo = file("Gone/a.jpg")
+        Trash.moveToTrash(photo, trash, now = 1)
+        File(tmp.root, "Gone").delete()
+        assertEquals(RestoreResult.OK, Trash.restore(list().single()))
+        assertTrue(photo.exists())
+    }
+
+    @Test
+    fun twoFilesAtTheSameMomentKeepBoth() {
+        Trash.moveToTrash(file("A/a.jpg", "first"), trash, now = 7)
+        Trash.moveToTrash(file("B/a.jpg", "second"), trash, now = 7)
+        assertEquals(setOf("A", "B"), list().map { it.original.parentFile!!.name }.toSet())
+    }
+
+    @Test
+    fun aStrayFileInTheTrashIsNeverWrittenOver() {
+        file("$TRASH_PATH/7.jpg", "stray")
+        Trash.moveToTrash(file("A/a.jpg"), trash, now = 7)
+        assertEquals("stray", File(trash, "7.jpg").readText())
     }
 
     @Test
     fun onlyWhatIsOlderThanTheCutoffIsPurged() {
-        Trash.moveToTrash(file("A/old.jpg"), now = 100)
-        Trash.moveToTrash(file("B/new.jpg"), now = 900)
-        assertEquals(1, Trash.purgeOlderThan(listOf(tmp.root), cutoff = 500) {})
+        Trash.moveToTrash(file("A/old.jpg"), trash, now = 100)
+        Trash.moveToTrash(file("B/new.jpg"), trash, now = 900)
+        assertEquals(1, Trash.purgeOlderThan(listOf(trash), cutoff = 500))
         assertEquals(listOf("new.jpg"), list().map { it.original.name })
-        assertFalse(File(tmp.root, "A/$TRASH_DIR_NAME").exists())
     }
 
     @Test
-    fun filesTheTrashDidNotNameAreLeftAlone() {
-        file("A/$TRASH_DIR_NAME/stray.jpg")
+    fun aRecordWhoseFileIsGoneIsDropped() {
+        Trash.moveToTrash(file("A/a.jpg"), trash, now = 3)
+        File(trash, "3.jpg").delete()
         assertTrue(list().isEmpty())
+        assertFalse(File(trash, "3.path").exists())
+    }
+
+    @Test
+    fun theOldPerFolderTrashIsCarriedOverWithItsTimes() {
+        file("A/.PhotoTrash/.nomedia")
+        file("A/.PhotoTrash/100-IMG_1.jpg", "photo")
+        file("A/.PhotoTrash/100-IMG_1.dng", "raw")
+        file("B/.PhotoTrash/200-x.png")
+        file("B/.PhotoTrash/stray.jpg")
+        val moved = Trash.migrateLegacy(listOf(tmp.root), { trash }) {}
+        assertEquals(2, moved)
+        val entries = list()
+        assertEquals(listOf(200L, 100L), entries.map { it.deletedAt })
+        val photo = entries.last()
+        assertEquals(File(tmp.root, "A/IMG_1.jpg"), photo.original)
+        assertEquals(1, photo.companions.size)
+        // Emptied, the old trash goes; one with a file it did not write stays.
+        assertFalse(File(tmp.root, "A/.PhotoTrash").exists())
+        assertTrue(File(tmp.root, "B/.PhotoTrash/stray.jpg").exists())
+        assertEquals(RestoreResult.OK, Trash.restore(photo))
+        assertEquals("raw", File(tmp.root, "A/IMG_1.dng").readText())
+    }
+
+    @Test
+    fun oldNamesParseOnlyAsTheOldTrashWroteThem() {
+        assertEquals(123L to "a-b.jpg", Trash.parseLegacyName("123-a-b.jpg"))
+        assertNull(Trash.parseLegacyName("photo.jpg"))
+        assertNull(Trash.parseLegacyName("12x-a.jpg"))
+        assertNull(Trash.parseLegacyName("-a.jpg"))
+        assertNull(Trash.parseLegacyName("123-"))
     }
 }

@@ -41,6 +41,10 @@ fun pathOnVolume(dir: File, volume: File): String {
     return if (dir.path.startsWith(prefix)) dir.path.removePrefix(prefix) else dir.path
 }
 
+/** The root of the volume [file] is on — where its trash is, so moving a photo there is a rename, never a copy. */
+fun volumeRootOf(context: Context, file: File): File? =
+    context.getSystemService(StorageManager::class.java).getStorageVolume(file)?.directory
+
 /** The album opened on a first launch: the camera's own folder, when there is one. */
 fun cameraAlbum(): File? =
     File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "Camera").takeIf { it.isDirectory }

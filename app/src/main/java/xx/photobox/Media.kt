@@ -33,8 +33,6 @@ fun isAudio(file: File): Boolean = file.extension.lowercase() in AUDIO_EXTENSION
 /** Whether [file] is a photo or video the gallery shows, by extension. */
 fun isMedia(file: File): Boolean = file.extension.lowercase().let { it in IMAGE_EXTENSIONS || it in VIDEO_EXTENSIONS }
 
-/** The trash folder inside every album something was deleted from. Never an album itself. */
-const val TRASH_DIR_NAME = ".PhotoTrash"
 
 /** The file that tells galleries to pass a folder by, and what makes a folder hidden here. */
 const val NOMEDIA_NAME = ".nomedia"

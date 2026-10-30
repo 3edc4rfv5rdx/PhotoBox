@@ -77,6 +77,14 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     var trashBusy by mutableStateOf(false)
         private set
 
+    /** Restoring or emptying the whole trash while it runs, with how far it has got; null otherwise. */
+    var trashJob by mutableStateOf<TrashJob?>(null)
+        private set
+    var trashJobDone by mutableIntStateOf(0)
+        private set
+    var trashJobTotal by mutableIntStateOf(0)
+        private set
+
     /** What the last trash step has to say, for a toast; cleared once said. */
     var trashNotice by mutableStateOf<TrashNotice?>(null)
         private set
@@ -257,18 +265,33 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
 
     // ---------- Trash ----------
 
-    /** Deletes for good what has been in the trash longer than the setting allows, once per start. */
+    /** The trash of every volume, whether it exists yet or not. */
+    private fun trashDirs(): List<File> = storageRoots(getApplication()).map { Trash.dirOn(it.dir) }
+
+    /**
+     * Once per start: carries the old per-folder trashes over, the first time
+     * only, then deletes for good what has been in the trash longer than the
+     * setting allows.
+     */
     private fun purgeOldTrash() {
         val cutoff = System.currentTimeMillis() - AppSettings.trashDays.value * DAY_MS
         viewModelScope.launch(Dispatchers.IO) {
-            runCatching { Trash.purgeOlderThan(searchRoots(), cutoff) { ensureActive() } }
+            runCatching {
+                if (!AppSettings.trashMigrated(getApplication())) {
+                    Trash.migrateLegacy(searchRoots(), { volumeRootOf(getApplication(), it)?.let(Trash::dirOn) }) {
+                        ensureActive()
+                    }
+                    AppSettings.setTrashMigrated(getApplication())
+                }
+                Trash.purgeOlderThan(trashDirs(), cutoff)
+            }
         }
     }
 
     fun loadTrash() {
         if (!hasStorageAccess) return
         viewModelScope.launch {
-            trashEntries = withContext(Dispatchers.IO) { Trash.list(searchRoots()) { ensureActive() } }
+            trashEntries = withContext(Dispatchers.IO) { Trash.list(trashDirs()) }
         }
     }
 
@@ -282,7 +305,8 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val moved = withContext(Dispatchers.IO) {
                 val companions = companionsOf(file)
-                Trash.moveToTrash(file, System.currentTimeMillis()).also { ok ->
+                val trashDir = volumeRootOf(getApplication(), file)?.let(Trash::dirOn)
+                (trashDir != null && Trash.moveToTrash(file, trashDir, System.currentTimeMillis())).also { ok ->
                     if (ok) announceChanged(getApplication(), (listOf(file) + companions).map { it.path })
                 }
             }
@@ -309,17 +333,43 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /** Puts back everything it can; what would land on a file already there stays in the trash. */
-    fun restoreAll() = changeTrash {
-        val left = trashEntries.orEmpty().count { entry ->
-            val ok = Trash.restore(entry) == RestoreResult.OK
+    /** Puts back everything it can; what would land on a file already there stays in the trash. */
+    fun restoreAll() = changeAllOfTrash(TrashJob.RESTORE) { entry ->
+        (Trash.restore(entry) == RestoreResult.OK).also { ok ->
             if (ok) announceChanged(getApplication(), listOf(entry.original.path))
-            !ok
         }
-        if (left > 0) TrashNotice.RESTORE_SOME_LEFT else null
     }
 
-    fun emptyTrash() = changeTrash {
-        if (trashEntries.orEmpty().map { Trash.purge(it) }.all { it }) null else TrashNotice.DELETE_FAILED
+    fun emptyTrash() = changeAllOfTrash(TrashJob.EMPTY, Trash::purge)
+
+    /**
+     * [step] on every entry, counted for the screen as it goes, then the
+     * trash and the open album read again. An entry [step] fails on stays
+     * in the trash and is reported once all are through.
+     */
+    private fun changeAllOfTrash(job: TrashJob, step: (TrashEntry) -> Boolean) {
+        val entries = trashEntries.orEmpty()
+        // Checked here, not only in changeTrash: the job is set before it starts.
+        if (trashBusy || entries.isEmpty()) return
+        trashJob = job
+        trashJobTotal = entries.size
+        trashJobDone = 0
+        val done = AtomicInteger(0)
+        changeTrash {
+            val failed = entries.count { entry -> !step(entry).also { done.incrementAndGet() } }
+            when {
+                failed == 0 -> null
+                job == TrashJob.RESTORE -> TrashNotice.RESTORE_SOME_LEFT
+                else -> TrashNotice.DELETE_FAILED
+            }
+        }
+        // Counted on the worker, shown from here: Compose state is not written from other threads.
+        viewModelScope.launch {
+            while (trashJob == job) {
+                trashJobDone = done.get()
+                delay(PROGRESS_TICK_MS)
+            }
+        }
     }
 
     fun noticeShown() {
@@ -332,13 +382,17 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         trashBusy = true
         viewModelScope.launch {
             val notice = withContext(Dispatchers.IO) { step() }
-            trashEntries = withContext(Dispatchers.IO) { Trash.list(searchRoots()) { ensureActive() } }
+            trashEntries = withContext(Dispatchers.IO) { Trash.list(trashDirs()) }
             trashBusy = false
+            trashJob = null
             notice?.let { trashNotice = it }
             loadItems()
         }
     }
 }
+
+/** A step on the whole trash, shown with its progress while it runs. */
+enum class TrashJob { RESTORE, EMPTY }
 
 /** What a trash step reports when it did not all go as asked. */
 enum class TrashNotice { DELETE_FAILED, RESTORE_EXISTS, RESTORE_FAILED, RESTORE_SOME_LEFT }

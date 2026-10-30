@@ -92,7 +92,7 @@ private val PLAY_ICON = 56.dp
  * [startPath]. A swipe goes to the next or previous one; a pinch or a double
  * tap zooms, and while zoomed a drag moves the photo instead of the page. A
  * tap shows or hides the bar on top, whose ⋮ has the file's info and sends
- * it to the trash through [onDelete]. [onPage] hears each file settled on, so
+ * it to the trash through [onDelete], when there is one. [onPage] hears each file settled on, so
  * the caller can open on it again after the list is reloaded.
  */
 @Composable
@@ -100,7 +100,7 @@ fun ViewerScreen(
     sorted: List<MediaItem>,
     startPath: String,
     onPage: (String) -> Unit,
-    onDelete: (MediaItem) -> Unit,
+    onDelete: ((MediaItem) -> Unit)?,
     onClose: () -> Unit,
 ) {
     BackHandler(onBack = onClose)
@@ -200,9 +200,12 @@ fun ViewerScreen(
                             menuOpen = false
                             info = current?.file?.path
                         }
-                        AppMenuItem(stringResource(R.string.to_trash), enabled = current != null) {
-                            menuOpen = false
-                            current?.let(onDelete)
+                        // Not for a file already in the trash.
+                        if (onDelete != null) {
+                            AppMenuItem(stringResource(R.string.to_trash), enabled = current != null) {
+                                menuOpen = false
+                                current?.let(onDelete)
+                            }
                         }
                     }
                 }

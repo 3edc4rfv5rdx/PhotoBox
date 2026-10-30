@@ -106,4 +106,6 @@
         <item quantity="many">%1$s файлів</item>
         <item quantity="other">%1$s файлу</item>
     </plurals>
+    <string name="trash_restoring">Відновлено %1$s з %2$s</string>
+    <string name="trash_emptying">Видалено %1$s з %2$s</string>
 </resources>

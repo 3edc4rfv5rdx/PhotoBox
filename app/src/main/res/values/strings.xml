@@ -102,4 +102,6 @@
         <item quantity="one">%1$s file</item>
         <item quantity="other">%1$s files</item>
     </plurals>
+    <string name="trash_restoring">Restored %1$s of %2$s</string>
+    <string name="trash_emptying">Deleted %1$s of %2$s</string>
 </resources>

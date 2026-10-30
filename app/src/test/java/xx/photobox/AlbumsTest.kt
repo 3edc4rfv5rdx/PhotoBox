@@ -70,7 +70,8 @@ class AlbumsTest {
     @Test
     fun trashIsNeverAnAlbum() {
         file("A/a.jpg")
-        file("A/$TRASH_DIR_NAME/b.jpg")
+        file("$TRASH_PATH/1-b.jpg")
+        file("B/.PhotoTrash/1-c.jpg")
         assertEquals(setOf("A"), scan().keys)
     }
 

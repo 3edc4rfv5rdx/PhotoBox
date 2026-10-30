@@ -38,6 +38,7 @@ import xx.photobox.AlbumOrder
 import xx.photobox.AppSettings
 import xx.photobox.GalleryViewModel
 import xx.photobox.ItemOrder
+import xx.photobox.MediaItem
 import xx.photobox.R
 import xx.photobox.TrashNotice
 import xx.photobox.isVideo
@@ -75,6 +76,12 @@ fun MainScreen(
     var choosingOrder by remember { mutableStateOf(false) }
     var addMenuOpen by remember { mutableStateOf(false) }
     var confirmTrash by remember { mutableStateOf<TrashStep?>(null) }
+    // The trashed file open full screen, and the one looked at last, marked in the list.
+    var trashViewerPath by rememberSaveable { mutableStateOf<String?>(null) }
+    var trashViewed by rememberSaveable { mutableStateOf<String?>(null) }
+    val trashItems = remember(vm.trashEntries) {
+        vm.trashEntries.orEmpty().map { MediaItem(it.file, it.deletedAt, it.size) }
+    }
     val roots by AppSettings.roots.collectAsState()
     var choosingItemOrder by remember { mutableStateOf(false) }
     // The file open full screen, by path: the list under it can be reloaded
@@ -193,13 +200,19 @@ fun MainScreen(
                     }
                 },
             ) {
-                TrashScreen(
-                    entries = vm.trashEntries,
-                    busy = vm.trashBusy,
-                    onRestore = vm::restore,
-                    onPurge = vm::purge,
-                    modifier = Modifier.weight(1f),
-                )
+                Box(Modifier.weight(1f)) {
+                    TrashScreen(
+                        entries = vm.trashEntries,
+                        busy = vm.trashBusy,
+                        job = vm.trashJob,
+                        jobDone = vm.trashJobDone,
+                        jobTotal = vm.trashJobTotal,
+                        viewed = trashViewed,
+                        onView = { trashViewerPath = it.file.path },
+                        onRestore = vm::restore,
+                        onPurge = vm::purge,
+                    )
+                }
             }
 
             Screen.SETTINGS -> AppScreen(
@@ -324,6 +337,23 @@ fun MainScreen(
                     )
                 }
             }
+        }
+    }
+
+    // Over the trash list, so it keeps its scroll; swipes through the trash, with no "to trash" in its menu.
+    val trashOpen = trashViewerPath
+    if (screen == Screen.TRASH && trashOpen != null && trashItems.isNotEmpty()) {
+        key(trashItems) {
+            ViewerScreen(
+                sorted = trashItems,
+                startPath = trashOpen,
+                onPage = {
+                    trashViewerPath = it
+                    trashViewed = it
+                },
+                onDelete = null,
+                onClose = { trashViewerPath = null },
+            )
         }
     }
 

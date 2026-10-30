@@ -56,6 +56,7 @@ object AppSettings {
     private const val KEY_ALBUM_ORDER = "album_order"
     private const val KEY_ALBUM_PATH = "album_path"
     private const val KEY_ROOTS = "roots"
+    private const val KEY_TRASH_MIGRATED = "trash_migrated"
     private const val KEY_SLIDESHOW_ALBUM = "slideshow_album"
     private const val KEY_SLIDESHOW_PHOTO = "slideshow_photo"
     private const val KEY_GRID_COLUMNS = "grid_columns"
@@ -198,6 +199,13 @@ object AppSettings {
         val clean = normalizeRoots(paths)
         _roots.value = clean
         prefs(context).edit { putString(KEY_ROOTS, clean.joinToString("\n")) }
+    }
+
+    /** Whether the old per-folder trashes have been carried over to the one per volume. */
+    fun trashMigrated(context: Context): Boolean = prefs(context).getBoolean(KEY_TRASH_MIGRATED, false)
+
+    fun setTrashMigrated(context: Context) {
+        prefs(context).edit { putBoolean(KEY_TRASH_MIGRATED, true) }
     }
 
     /** The album open last, kept across launches. Null before one was ever opened. */
