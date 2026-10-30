@@ -45,6 +45,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
@@ -68,6 +69,7 @@ import kotlin.math.roundToInt
 private val CELL_GAP = 2.dp
 private val CELL_CORNER = 2.dp
 private val SELECTED_BORDER = 3.dp
+private val FOCUS_BORDER = 4.dp
 private val SELECTED_ICON = 24.dp
 private const val SELECTED_SCRIM_ALPHA = 0.3f
 
@@ -165,22 +167,34 @@ fun ThumbnailsScreen(
                         modifier = Modifier.padding(start = 12.dp, top = 16.dp, bottom = 8.dp),
                     )
 
-                    is GridEntry.Item -> Box(
-                        Modifier
-                            .padding(CELL_GAP / 2)
-                            .aspectRatio(1f)
-                            .combinedClickable(
-                                onClick = { if (selected.isEmpty()) onOpen(entry.item) else onSelect(entry.item) },
-                                onLongClick = { onSelect(entry.item) },
-                            ),
-                    ) {
-                        PhotoThumbnail(
-                            path = entry.item.file.path,
-                            maxDimension = decodeSize,
-                            corner = CELL_CORNER,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        if (entry.item.file.path in selected) SelectedMark()
+                    is GridEntry.Item -> {
+                        // Framed while a remote's arrows are on it: a ripple's tint is lost on a photo.
+                        var focused by remember { mutableStateOf(false) }
+                        Box(
+                            Modifier
+                                .padding(CELL_GAP / 2)
+                                .aspectRatio(1f)
+                                .onFocusChanged { focused = it.isFocused }
+                                .combinedClickable(
+                                    onClick = { if (selected.isEmpty()) onOpen(entry.item) else onSelect(entry.item) },
+                                    onLongClick = { onSelect(entry.item) },
+                                ),
+                        ) {
+                            PhotoThumbnail(
+                                path = entry.item.file.path,
+                                maxDimension = decodeSize,
+                                corner = CELL_CORNER,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            if (entry.item.file.path in selected) SelectedMark()
+                            if (focused) {
+                                Box(
+                                    Modifier
+                                        .matchParentSize()
+                                        .border(FOCUS_BORDER, MaterialTheme.colorScheme.onSurface, RoundedCornerShape(CELL_CORNER)),
+                                )
+                            }
+                        }
                     }
                 }
             }

@@ -104,6 +104,11 @@ Work in progress, built to `TZ.md`.
   hands the file over. An app that takes several gets a long tap to pick
   them and ✓ to send them back. The trash, slideshow and settings stay out of
   the way meanwhile.
+- **TV box**: PhotoBox shows in the Android TV launcher too, and needs no
+  touchscreen. With a remote, a frame marks the thumbnail the arrows are on
+  and holding OK picks it; in the viewer ← and → page and OK shows or hides
+  the bar; in the slideshow ← and → step and OK pauses or goes on. An air
+  mouse works as a finger does.
 - **Folder access**: PhotoBox reads files directly and needs "All files access".
 
 ## Install

@@ -137,6 +137,16 @@ fun SlideshowScreen(
         index = 0
     }
 
+    // The middle button: pause, go on, or at the end start over.
+    fun playPause() {
+        if (ended) {
+            startOver()
+        } else {
+            resuming = paused
+            paused = !paused
+        }
+    }
+
     // Puts up the photo at index, or passes it over.
     LaunchedEffect(index, photos) {
         // A reloaded album can be shorter than where the slideshow had got to.
@@ -183,7 +193,17 @@ fun SlideshowScreen(
         Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .pointerInput(Unit) { detectTapGestures { controls = !controls } },
+            .pointerInput(Unit) { detectTapGestures { controls = !controls } }
+            // From a remote: the arrows step, OK pauses, goes on, or starts over at the end.
+            .remoteKeys(
+                onLeft = { move(-1) },
+                onRight = { move(1) },
+                onOk = {
+                    controls = true
+                    touched++
+                    playPause()
+                },
+            ),
         contentAlignment = Alignment.Center,
     ) {
         RotatedFrame(rotation, Modifier.fillMaxSize()) {
@@ -258,14 +278,7 @@ fun SlideshowScreen(
                                 else -> R.string.pause
                             },
                         ),
-                        touch {
-                            if (ended) {
-                                startOver()
-                            } else {
-                                resuming = paused
-                                paused = !paused
-                            }
-                        },
+                        touch(::playPause),
                         tint = Color.White,
                     )
                     Spacer(Modifier.width(CONTROLS_GAP))

@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: TV boxes: an Android TV launcher banner, a focus frame on thumbnails, and remote arrows and OK in the viewer and the slideshow
 - N: Other apps can pick photos and videos through PhotoBox, one by a tap or several with a long tap and ✓
 - N: Open with PhotoBox: a photo or video from another app shows full screen among the rest of its folder
 - N: Filter the album by part of the name and a range of days, shown in a line under the top bar; the viewer and the slideshow follow it

@@ -49,6 +49,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -72,6 +73,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import xx.photobox.AppSettings
 import xx.photobox.MediaItem
@@ -136,7 +138,19 @@ fun ViewerScreen(
         sorted.getOrNull(pagerState.settledPage)?.let { onPage(it.file.path) }
     }
 
-    Box(Modifier.fillMaxSize().background(Color.Black)) {
+    val scope = rememberCoroutineScope()
+    fun pageBy(by: Int) {
+        val target = pagerState.currentPage + by
+        if (target in sorted.indices) scope.launch { pagerState.animateScrollToPage(target) }
+    }
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color.Black)
+            // From a remote: the arrows page, OK shows or hides the bar.
+            .remoteKeys(onLeft = { pageBy(-1) }, onRight = { pageBy(1) }, onOk = { chrome = !chrome }),
+    ) {
         val pageContent: @Composable PagerScope.(Int) -> Unit = { page ->
             val path = sorted[page].file.path
             PhotoPage(
