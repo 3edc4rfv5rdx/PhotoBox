@@ -5,7 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.os.CancellationSignal
-import android.webkit.MimeTypeMap
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
@@ -66,7 +65,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.core.content.FileProvider
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -91,8 +89,9 @@ private val PLAY_ICON = 56.dp
  * The album's files full screen, [sorted] as the grid shows them, opened on
  * [startPath]. A swipe goes to the next or previous one; a pinch or a double
  * tap zooms, and while zoomed a drag moves the photo instead of the page. A
- * tap shows or hides the bar on top, whose ⋮ has the file's info and sends
- * it to the trash through [onDelete], when there is one. [onPage] hears each file settled on, so
+ * tap shows or hides the bar on top, whose ⋮ has the file's info, and sends
+ * it to another app through [onShare] or to the trash through [onDelete],
+ * when there are those. [onPage] hears each file settled on, so
  * the caller can open on it again after the list is reloaded.
  */
 @Composable
@@ -100,6 +99,7 @@ fun ViewerScreen(
     sorted: List<MediaItem>,
     startPath: String,
     onPage: (String) -> Unit,
+    onShare: ((MediaItem) -> Unit)?,
     onDelete: ((MediaItem) -> Unit)?,
     onClose: () -> Unit,
 ) {
@@ -200,7 +200,12 @@ fun ViewerScreen(
                             menuOpen = false
                             info = current?.file?.path
                         }
-                        // Not for a file already in the trash.
+                        if (onShare != null) {
+                            AppMenuItem(stringResource(R.string.share), enabled = current != null) {
+                                menuOpen = false
+                                current?.let(onShare)
+                            }
+                        }
                         if (onDelete != null) {
                             AppMenuItem(stringResource(R.string.to_trash), enabled = current != null) {
                                 menuOpen = false
@@ -366,14 +371,11 @@ private fun PlayButton(onClick: () -> Unit) {
     }
 }
 
-/** Hands the video at [path] to whichever player the user has, through the
- * app's FileProvider: another app cannot read a plain path of ours. */
+/** Hands the video at [path] to whichever player the user has. */
 private fun playVideo(context: Context, path: String) {
     val file = File(path)
-    val uri = FileProvider.getUriForFile(context, "${context.packageName}.files", file)
-    val type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension.lowercase()) ?: "video/*"
     val intent = Intent(Intent.ACTION_VIEW)
-        .setDataAndType(uri, type)
+        .setDataAndType(contentUri(context, file), mimeTypeOf(file, "video/*"))
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     try {
         context.startActivity(intent)

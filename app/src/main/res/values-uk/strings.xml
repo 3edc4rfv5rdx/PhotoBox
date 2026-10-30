@@ -108,4 +108,7 @@
     </plurals>
     <string name="trash_restoring">Відновлено %1$s з %2$s</string>
     <string name="trash_emptying">Видалено %1$s з %2$s</string>
+    <string name="share">Поділитися</string>
+    <string name="select_all">Вибрати всі</string>
+    <string name="selected_count">Вибрано %1$s</string>
 </resources>

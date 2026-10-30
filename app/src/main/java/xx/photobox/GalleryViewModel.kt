@@ -296,23 +296,32 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /**
-     * Moves [file] into its folder's trash. [onDone] hears whether it went, on
-     * the main thread; the open album is read again either way.
+     * Moves [files], each with its RAW companions, into the trash of its own
+     * volume. [onDone] hears whether all of them went, on the main thread; the
+     * open album is read again either way.
      */
-    fun moveToTrash(file: File, onDone: (Boolean) -> Unit = {}) {
-        if (trashBusy) return
+    fun moveToTrash(files: List<File>, onDone: (Boolean) -> Unit = {}) {
+        if (trashBusy || files.isEmpty()) return
         trashBusy = true
         viewModelScope.launch {
-            val moved = withContext(Dispatchers.IO) {
-                val companions = companionsOf(file)
-                val trashDir = volumeRootOf(getApplication(), file)?.let(Trash::dirOn)
-                (trashDir != null && Trash.moveToTrash(file, trashDir, System.currentTimeMillis())).also { ok ->
-                    if (ok) announceChanged(getApplication(), (listOf(file) + companions).map { it.path })
+            val allMoved = withContext(Dispatchers.IO) {
+                val gone = mutableListOf<String>()
+                var failed = 0
+                for (file in files) {
+                    val companions = companionsOf(file)
+                    val trashDir = volumeRootOf(getApplication(), file)?.let(Trash::dirOn)
+                    if (trashDir != null && Trash.moveToTrash(file, trashDir, System.currentTimeMillis())) {
+                        gone += (listOf(file) + companions).map { it.path }
+                    } else {
+                        failed++
+                    }
                 }
+                if (gone.isNotEmpty()) announceChanged(getApplication(), gone)
+                failed == 0
             }
             trashBusy = false
-            if (!moved) trashNotice = TrashNotice.DELETE_FAILED
-            onDone(moved)
+            if (!allMoved) trashNotice = TrashNotice.DELETE_FAILED
+            onDone(allMoved)
             loadItems()
         }
     }
@@ -332,7 +341,6 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         if (Trash.purge(entry)) null else TrashNotice.DELETE_FAILED
     }
 
-    /** Puts back everything it can; what would land on a file already there stays in the trash. */
     /** Puts back everything it can; what would land on a file already there stays in the trash. */
     fun restoreAll() = changeAllOfTrash(TrashJob.RESTORE) { entry ->
         (Trash.restore(entry) == RestoreResult.OK).also { ok ->

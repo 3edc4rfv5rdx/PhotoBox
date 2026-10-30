@@ -3,12 +3,14 @@ package xx.photobox.ui
 import android.content.Context
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
@@ -24,7 +26,11 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -61,6 +67,9 @@ import kotlin.math.roundToInt
 
 private val CELL_GAP = 2.dp
 private val CELL_CORNER = 2.dp
+private val SELECTED_BORDER = 3.dp
+private val SELECTED_ICON = 24.dp
+private const val SELECTED_SCRIM_ALPHA = 0.3f
 
 /** How far fingers must spread or close, as a ratio of their distance, before the grid gains or loses a column. */
 private const val PINCH_STEP = 1.25f
@@ -77,6 +86,8 @@ private val SCROLLER_THUMB_WIDTH = 6.dp
  * heading over each day's files in date order. A pinch changes the column
  * count through [onColumns]; one finger scrolls, and a long grid gets a bar on
  * the right edge to drag through it, labelled with where the drag has got to.
+ * A tap opens a file through [onOpen]; a long tap picks it through
+ * [onSelect], and while anything is [selected] a tap picks or drops too.
  */
 @Composable
 fun ThumbnailsScreen(
@@ -86,7 +97,9 @@ fun ThumbnailsScreen(
     order: ItemOrder,
     columns: Int,
     onColumns: (Int) -> Unit,
+    selected: Set<String>,
     onOpen: (MediaItem) -> Unit,
+    onSelect: (MediaItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     if (sorted == null) {
@@ -150,21 +163,52 @@ fun ThumbnailsScreen(
                         modifier = Modifier.padding(start = 12.dp, top = 16.dp, bottom = 8.dp),
                     )
 
-                    is GridEntry.Item -> PhotoThumbnail(
-                        path = entry.item.file.path,
-                        maxDimension = decodeSize,
-                        corner = CELL_CORNER,
-                        modifier = Modifier
+                    is GridEntry.Item -> Box(
+                        Modifier
                             .padding(CELL_GAP / 2)
                             .aspectRatio(1f)
-                            .clickable { onOpen(entry.item) },
-                    )
+                            .combinedClickable(
+                                onClick = { if (selected.isEmpty()) onOpen(entry.item) else onSelect(entry.item) },
+                                onLongClick = { onSelect(entry.item) },
+                            ),
+                    ) {
+                        PhotoThumbnail(
+                            path = entry.item.file.path,
+                            maxDimension = decodeSize,
+                            corner = CELL_CORNER,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        if (entry.item.file.path in selected) SelectedMark()
+                    }
                 }
             }
         }
 
         FastScroller(state = gridState, label = { index -> scrollLabel(context, entries, index, order) })
     }
+}
+
+/** Over a picked cell: an accent tint and frame, and a tick in the corner. */
+@Composable
+private fun BoxScope.SelectedMark() {
+    val scheme = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(CELL_CORNER)
+    Box(
+        Modifier
+            .matchParentSize()
+            .background(scheme.primary.copy(alpha = SELECTED_SCRIM_ALPHA), shape)
+            .border(SELECTED_BORDER, scheme.primary, shape),
+    )
+    Icon(
+        Icons.Filled.CheckCircle,
+        contentDescription = null,
+        tint = scheme.onPrimary,
+        modifier = Modifier
+            .align(Alignment.TopEnd)
+            .padding(4.dp)
+            .size(SELECTED_ICON)
+            .background(scheme.primary, CircleShape),
+    )
 }
 
 /**

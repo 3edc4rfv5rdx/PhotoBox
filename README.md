@@ -29,9 +29,14 @@ Work in progress, built to `TZ.md`.
   through it, showing the month, letter or size it has reached. The date is
   when the photo or video was taken, from its EXIF or container, else the
   file's own time; it is read once and cached.
+- **Picking files**: a long tap on a thumbnail picks it, and while anything
+  is picked a tap picks or drops more; ⋮ → Select all picks the whole album.
+  The bar on top then shares them with another app or moves them to the
+  trash; ← or Back drops the pick.
 - **Viewer**: a tap on a thumbnail opens it full screen, in the grid's order.
   Swipe to the next or previous file; pinch or double-tap to zoom, and drag
-  while zoomed. A tap hides or shows the bar on top. A video shows a still
+  while zoomed. A tap hides or shows the bar on top, whose ⋮ shares the file.
+  A video shows a still
   with a play button: it plays in PhotoBox's own player — play and pause, the
   time and a seek bar, hidden and shown by a tap — or in another app with
   "Video player" set to that in Settings.

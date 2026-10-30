@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: A long tap picks thumbnails, a tap then picks more; the picked files are shared or moved to the trash together, and the viewer's ⋮ shares a single file
 - F: One trash per storage, Documents/PhotoBox/.Trash, instead of one in every folder — what was in the old ones is carried over; the trash screen shows its totals, opens files full screen and counts restoring or emptying it all
 - F: The open album stands out in the album list filled with the accent colour, and the list opens scrolled to it
 - N: Trash: the viewer's ⋮ sends a file, RAW and all, to a hidden trash in its own folder; the trash screen restores or deletes for good, one by one or all, and keeps files for the days set in Settings

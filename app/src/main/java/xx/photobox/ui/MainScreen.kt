@@ -1,10 +1,12 @@
 package xx.photobox.ui
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,8 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -90,6 +95,10 @@ fun MainScreen(
     val items = vm.items
     val sorted = remember(items, itemOrder) { items?.let { sortItems(it, itemOrder) } }
     val photos = remember(sorted) { sorted?.filterNot { isVideo(it.file.path) }.orEmpty() }
+    // The files picked by a long tap, by path. Keyed by the album, so another one opens with none picked.
+    var selection by rememberSaveable(vm.album?.path) { mutableStateOf(emptySet<String>()) }
+    val picked = remember(sorted, selection) { sorted?.filter { it.file.path in selection }.orEmpty() }
+    var selectionMenuOpen by remember { mutableStateOf(false) }
     val slideSeconds by AppSettings.slideSeconds.collectAsState()
     // Where the running slideshow started; null while none runs.
     var slideshowStart by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -108,6 +117,13 @@ fun MainScreen(
         }
     }
     LaunchedEffect(vm.album, vm.hasStorageAccess) { vm.loadItems() }
+    // A file gone from the album — to the trash, or deleted elsewhere — is no longer picked.
+    LaunchedEffect(sorted) {
+        sorted?.let { list ->
+            val paths = list.mapTo(HashSet()) { it.file.path }
+            if (!paths.containsAll(selection)) selection = selection.filterTo(LinkedHashSet()) { it in paths }
+        }
+    }
 
     Box(modifier.fillMaxSize()) {
         when (screen) {
@@ -227,10 +243,40 @@ fun MainScreen(
 
             Screen.THUMBNAILS -> Box(Modifier.fillMaxSize()) {
                 Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
+                    if (selection.isNotEmpty()) {
+                        BackHandler { selection = emptySet() }
+                        TopBar {
+                            // Not ✕: that is the exit, a tap away from here once the pick is dropped.
+                            LargeIconButton(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back), { selection = emptySet() })
+                            Text(
+                                text = stringResource(R.string.selected_count, formatCount(selection.size)),
+                                style = MaterialTheme.typography.titleLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 12.dp),
+                            )
+                            LargeIconButton(
+                                Icons.Filled.Share,
+                                stringResource(R.string.share),
+                                { shareFiles(context, picked.map { it.file }) },
+                            )
+                            LargeIconButton(
+                                Icons.Filled.Delete,
+                                stringResource(R.string.to_trash),
+                                { vm.moveToTrash(picked.map { it.file }) },
+                                enabled = !vm.trashBusy,
+                            )
+                            Box {
+                                MoreButton(onClick = { selectionMenuOpen = true })
+                                AppMenu(expanded = selectionMenuOpen, onDismissRequest = { selectionMenuOpen = false }) {
+                                    AppMenuItem(stringResource(R.string.select_all)) {
+                                        selectionMenuOpen = false
+                                        selection = sorted.orEmpty().mapTo(LinkedHashSet()) { it.file.path }
+                                    }
+                                }
+                            }
+                        }
+                    } else TopBar {
                         LargeIconButton(Icons.Filled.Close, stringResource(R.string.exit), onExit)
                         // The quick way to another album.
                         Text(
@@ -295,7 +341,12 @@ fun MainScreen(
                                 order = itemOrder,
                                 columns = gridColumns,
                                 onColumns = { AppSettings.setGridColumns(context, it) },
+                                selected = selection,
                                 onOpen = { viewerPath = it.file.path },
+                                onSelect = { item ->
+                                    val path = item.file.path
+                                    selection = if (path in selection) selection - path else selection + path
+                                },
                                 modifier = Modifier.weight(1f),
                             )
                         }
@@ -312,6 +363,7 @@ fun MainScreen(
                             sorted = sorted,
                             startPath = open,
                             onPage = { viewerPath = it },
+                            onShare = { shareFiles(context, listOf(it.file)) },
                             onDelete = { item ->
                                 // One at a time: a second tap while the first is under way does nothing.
                                 if (!vm.trashBusy) {
@@ -319,7 +371,7 @@ fun MainScreen(
                                     // the album has been read again without this file.
                                     val at = sorted.indexOf(item)
                                     viewerPath = (sorted.getOrNull(at + 1) ?: sorted.getOrNull(at - 1))?.file?.path
-                                    vm.moveToTrash(item.file) { moved -> if (!moved) viewerPath = item.file.path }
+                                    vm.moveToTrash(listOf(item.file)) { moved -> if (!moved) viewerPath = item.file.path }
                                 }
                             },
                             onClose = { viewerPath = null },
@@ -340,7 +392,8 @@ fun MainScreen(
         }
     }
 
-    // Over the trash list, so it keeps its scroll; swipes through the trash, with no "to trash" in its menu.
+    // Over the trash list, so it keeps its scroll; swipes through the trash. Nothing to send or
+    // trash in its menu: a trashed file is named by when it was deleted, not by its own name.
     val trashOpen = trashViewerPath
     if (screen == Screen.TRASH && trashOpen != null && trashItems.isNotEmpty()) {
         key(trashItems) {
@@ -351,6 +404,7 @@ fun MainScreen(
                     trashViewerPath = it
                     trashViewed = it
                 },
+                onShare = null,
                 onDelete = null,
                 onClose = { trashViewerPath = null },
             )
@@ -430,6 +484,16 @@ fun MainScreen(
             )
         }
     }
+}
+
+/** The thumbnails' top bar, in either of its two forms: the album's, or the picked files'. */
+@Composable
+private fun TopBar(content: @Composable RowScope.() -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content,
+    )
 }
 
 /** A step on the whole trash, waiting on its OK. */
