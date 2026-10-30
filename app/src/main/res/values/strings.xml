@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PhotoBox</string>
+    <string name="need_storage_access">Needs file access</string>
+    <string name="need_storage_access_hint">PhotoBox works with photo and video files directly and needs access to all files</string>
+    <string name="grant_access">Grant access</string>
+    <string name="back">Back</string>
+    <string name="exit">Exit</string>
+    <string name="more_options">More options</string>
+    <string name="albums">Albums</string>
+    <string name="trash">Trash</string>
+    <string name="slideshow">Slideshow</string>
+    <string name="settings">Settings</string>
+    <string name="about">About</string>
+    <string name="not_ready">Not ready yet</string>
+    <string name="cancel">Cancel</string>
+    <string name="setting_theme">Theme</string>
+    <string name="setting_accent">Color</string>
+    <string name="setting_language">Language</string>
+    <string name="setting_update_check">Check for updates at launch</string>
+    <string name="theme_system">System</string>
+    <string name="theme_light">Light</string>
+    <string name="theme_dark">Dark</string>
+    <string name="language_system">System</string>
+</resources>

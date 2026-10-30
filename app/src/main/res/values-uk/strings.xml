@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PhotoBox</string>
+    <string name="need_storage_access">Потрібен доступ до файлів</string>
+    <string name="need_storage_access_hint">PhotoBox працює з файлами фото і відео напряму і потребує доступу до всіх файлів</string>
+    <string name="grant_access">Надати доступ</string>
+    <string name="back">Назад</string>
+    <string name="exit">Вихід</string>
+    <string name="more_options">Ще</string>
+    <string name="albums">Альбоми</string>
+    <string name="trash">Кошик</string>
+    <string name="slideshow">Слайд-шоу</string>
+    <string name="settings">Налаштування</string>
+    <string name="about">Про програму</string>
+    <string name="not_ready">Ще не готово</string>
+    <string name="cancel">Скасувати</string>
+    <string name="setting_theme">Тема</string>
+    <string name="setting_accent">Колір</string>
+    <string name="setting_language">Мова</string>
+    <string name="setting_update_check">Перевіряти оновлення під час запуску</string>
+    <string name="theme_system">Системна</string>
+    <string name="theme_light">Світла</string>
+    <string name="theme_dark">Темна</string>
+    <string name="language_system">Системна</string>
+</resources>

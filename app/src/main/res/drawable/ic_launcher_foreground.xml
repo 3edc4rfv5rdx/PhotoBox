@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Two stacked photos: the back one only as an outline peeking out above and
+     to the right, the front one with a sun and hills. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Scaled in so the corners stay inside the 66dp circle a round mask keeps. -->
+    <group
+        android:pivotX="54"
+        android:pivotY="54"
+        android:scaleX="0.85"
+        android:scaleY="0.85">
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="3.5"
+            android:strokeLineCap="round"
+            android:pathData="M42,35 L42,32 a4,4 0,0 1,4 -4 h28 a4,4 0,0 1,4 4 v28 a4,4 0,0 1,-4 4 h-3" />
+        <path
+            android:fillColor="#00000000"
+            android:strokeColor="#FFFFFF"
+            android:strokeWidth="3.5"
+            android:pathData="M35,41h28a4,4 0,0 1,4 4v28a4,4 0,0 1,-4 4h-28a4,4 0,0 1,-4 -4v-28a4,4 0,0 1,4 -4z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M41,46a4,4 0,1 1,0 8a4,4 0,1 1,0 -8z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M34,74 L44,61 L51,68 L58,59 L64,74 Z" />
+    </group>
+</vector>
