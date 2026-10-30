@@ -107,7 +107,8 @@ Work in progress, built to `TZ.md`.
 - **TV box**: PhotoBox shows in the Android TV launcher too, and needs no
   touchscreen. With a remote, a frame marks the thumbnail the arrows are on
   and holding OK picks it; in the viewer ← and → page and OK shows or hides
-  the bar; in the slideshow ← and → step and OK pauses or goes on. An air
+  the bar; in the slideshow ← and → step and OK pauses or goes on; in the
+  video player ← and → jump 10 seconds and OK plays or pauses. An air
   mouse works as a finger does.
 - **Folder access**: PhotoBox reads files directly and needs "All files access".
 

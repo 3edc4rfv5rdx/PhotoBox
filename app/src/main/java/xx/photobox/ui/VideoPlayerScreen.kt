@@ -49,11 +49,15 @@ import java.io.File
 /** How often the position under the seek bar is read while the video plays. */
 private const val POSITION_TICK_MS = 200L
 
+/** How far a remote's ← or → jumps. */
+private const val REMOTE_SEEK_MS = 10_000L
+
 /**
  * The video at [path] in the app's own player, full screen, starting at
  * once. The picture turns with the phone like a photo does; the controls —
  * back on top, play or pause, the time and the seek bar below — stay upright
- * with the rest of the app, and a tap hides or shows them. Paused when the
+ * with the rest of the app, and a tap hides or shows them. From a remote, ←
+ * and → jump back and on [REMOTE_SEEK_MS], OK plays or pauses. Paused when the
  * app goes to the background, released when this closes.
  */
 @Composable
@@ -97,6 +101,22 @@ fun VideoPlayerScreen(path: String, onClose: () -> Unit) {
     LifecycleResumeEffect(player) {
         onPauseOrDispose { player.pause() }
     }
+    fun playPause() {
+        if (player.isPlaying) {
+            player.pause()
+        } else {
+            // Played to the end, it starts over.
+            if (player.playbackState == Player.STATE_ENDED) player.seekTo(0L)
+            player.play()
+        }
+    }
+
+    fun seekBy(by: Long) {
+        controls = true
+        val end = player.duration.takeIf { it > 0 } ?: return
+        player.seekTo((player.currentPosition + by).coerceIn(0L, end))
+    }
+
     LaunchedEffect(player) {
         while (true) {
             position = player.currentPosition
@@ -109,7 +129,15 @@ fun VideoPlayerScreen(path: String, onClose: () -> Unit) {
         Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .pointerInput(Unit) { detectTapGestures { controls = !controls } },
+            .pointerInput(Unit) { detectTapGestures { controls = !controls } }
+            .remoteKeys(
+                onLeft = { seekBy(-REMOTE_SEEK_MS) },
+                onRight = { seekBy(REMOTE_SEEK_MS) },
+                onOk = {
+                    controls = true
+                    playPause()
+                },
+            ),
     ) {
         RotatedFrame(rotation, Modifier.fillMaxSize()) {
             // A TextureView, not a SurfaceView: a surface is drawn outside the
@@ -150,15 +178,7 @@ fun VideoPlayerScreen(path: String, onClose: () -> Unit) {
                 LargeIconButton(
                     icon = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = stringResource(if (isPlaying) R.string.pause else R.string.play_video),
-                    onClick = {
-                        if (isPlaying) {
-                            player.pause()
-                        } else {
-                            // Played to the end, it starts over.
-                            if (player.playbackState == Player.STATE_ENDED) player.seekTo(0L)
-                            player.play()
-                        }
-                    },
+                    onClick = ::playPause,
                     tint = Color.White,
                 )
                 Text(
