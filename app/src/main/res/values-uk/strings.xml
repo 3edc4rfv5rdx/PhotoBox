@@ -121,4 +121,5 @@
     <string name="move_failed">Не все вдалося перемістити</string>
     <string name="copy_failed">Не все вдалося скопіювати</string>
     <string name="new_folder">Нова папка</string>
+    <string name="delete_album">Видалити альбом</string>
 </resources>

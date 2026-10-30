@@ -181,6 +181,7 @@ fun MainScreen(
                     },
                     // Whole volumes, searched for want of roots, are not the user's to remove.
                     onNewAlbum = vm::startDraft,
+                    onDeleteEmpty = vm::deleteEmptyAlbum,
                     onRemoveRoot = if (roots.isEmpty()) {
                         null
                     } else {

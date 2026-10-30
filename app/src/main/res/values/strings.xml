@@ -117,4 +117,5 @@
     <string name="move_failed">Not everything could be moved</string>
     <string name="copy_failed">Not everything could be copied</string>
     <string name="new_folder">New folder</string>
+    <string name="delete_album">Delete album</string>
 </resources>

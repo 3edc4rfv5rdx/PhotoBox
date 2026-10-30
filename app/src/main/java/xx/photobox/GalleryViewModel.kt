@@ -278,6 +278,23 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /**
+     * Deletes the empty album [dir] and reads the albums again; when it was the
+     * open one, none is open after. A folder something has landed in since the
+     * scan is left alone.
+     */
+    fun deleteEmptyAlbum(dir: File) {
+        viewModelScope.launch {
+            val gone = withContext(Dispatchers.IO) { dir.listFiles()?.isEmpty() == true && dir.delete() }
+            if (!gone) {
+                notice = FileNotice.DELETE_FAILED
+            } else if (album == dir) {
+                album = null
+            }
+            scanAlbums(restart = true)
+        }
+    }
+
     // ---------- Trash ----------
 
     /** The trash of every volume, whether it exists yet or not. */

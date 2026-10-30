@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: An empty album's ⋮ in the album list deletes its folder
 - F: An empty folder shows in the album list as an empty album with the app's icon for a cover, and each search folder's ⋮ makes a new album in it
 - F: The album's name on the main screen is shown in brackets, [ Camera ]
 - N: Move or copy picked files, or the one in the viewer, into a folder chosen in the app's folder list, which can now make a new folder; a taken name gets a number, a RAW goes with its photo, and moving, copying or trashing many files shows progress
