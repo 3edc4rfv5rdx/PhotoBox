@@ -413,6 +413,13 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
                 val moves = renameTargets(file, base.trim())
                 if (renameAll(moves.map { it.first }, moves.map { it.second })) {
                     announceChanged(getApplication(), moves.flatMap { (from, to) -> listOf(from.path, to.path) })
+                    // The slideshow stopped on it goes on from it under its new name.
+                    val app = getApplication<Application>()
+                    file.parentFile?.let { album ->
+                        if (AppSettings.slideshowFrame(app, album) == file.path) {
+                            AppSettings.setSlideshowFrame(app, album, moves[0].second.path)
+                        }
+                    }
                     moves[0].second
                 } else {
                     null
