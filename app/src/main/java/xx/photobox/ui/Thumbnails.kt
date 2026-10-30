@@ -25,6 +25,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.exifinterface.media.ExifInterface
 import kotlinx.coroutines.CoroutineStart
@@ -37,7 +38,11 @@ import xx.photobox.isVideo
 import java.io.File
 import kotlin.math.abs
 
-private const val THUMBNAIL_MAX_DIMENSION = 240
+/** The decode size a list row's small square needs; the grid asks for its cells' own size. */
+const val THUMBNAIL_MAX_DIMENSION = 240
+
+/** How much smaller than the asked size an embedded EXIF preview may be and still serve: they are about 160 pixels. */
+private const val EMBEDDED_PREVIEW_MIN_SHARE = 0.6f
 private val THUMBNAIL_PLAY_ICON = 28.dp
 
 /** How far an embedded EXIF preview's proportions may stray from the photo's before
@@ -49,22 +54,29 @@ private const val THUMBNAIL_ASPECT_TOLERANCE = 0.02f
  * it starts, instead of every row's decode running at once. */
 private val thumbnailDispatcher = Dispatchers.IO.limitedParallelism(3)
 
-/** Decoded thumbnails by path, bounded by bytes, so scrolling back or reopening
- * a list shows them at once. */
+/** Decoded thumbnails by size and path, bounded by bytes, so scrolling back or
+ * reopening a list shows them at once. */
 private val thumbnailCache = object : LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / 16).toInt()) {
     override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
 }
 
-/** A small square preview of the photo or video at [path]. */
+/** A square preview of the photo or video at [path], decoded to about [maxDimension] pixels a side. */
 @Composable
-fun PhotoThumbnail(path: String, modifier: Modifier = Modifier) {
-    val bitmap by produceState<Bitmap?>(initialValue = thumbnailCache.get(path), key1 = path) {
-        value = thumbnailCache.get(path)
-            ?: withContext(thumbnailDispatcher) { withCancellationSignal { decodeThumbnail(path, it) } }?.also { thumbnailCache.put(path, it) }
+fun PhotoThumbnail(
+    path: String,
+    modifier: Modifier = Modifier,
+    maxDimension: Int = THUMBNAIL_MAX_DIMENSION,
+    corner: Dp = 8.dp,
+) {
+    val key = "$maxDimension:$path"
+    val bitmap by produceState<Bitmap?>(initialValue = thumbnailCache.get(key), key1 = key) {
+        value = thumbnailCache.get(key)
+            ?: withContext(thumbnailDispatcher) { withCancellationSignal { decodeThumbnail(path, maxDimension, it) } }
+                ?.also { thumbnailCache.put(key, it) }
     }
     Box(
         modifier
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(corner))
             .background(MaterialTheme.colorScheme.surfaceVariant),
     ) {
         bitmap?.let {
@@ -91,10 +103,11 @@ fun PhotoThumbnail(path: String, modifier: Modifier = Modifier) {
  * proportions — a few kilobytes read instead of the whole photo decoded —
  * otherwise a sampled decode of the photo itself.
  */
-private fun decodeThumbnail(path: String, signal: CancellationSignal): Bitmap? {
-    if (isVideo(path)) return videoFrame(path, THUMBNAIL_MAX_DIMENSION, signal)
+private fun decodeThumbnail(path: String, maxDimension: Int, signal: CancellationSignal): Bitmap? {
+    if (isVideo(path)) return videoFrame(path, maxDimension, signal)
     val exif = readExif(path)
     val embedded = exif?.takeIf { it.hasThumbnail() }?.thumbnailBitmap
+        ?.takeIf { maxOf(it.width, it.height) >= maxDimension * EMBEDDED_PREVIEW_MIN_SHARE }
     if (embedded != null) {
         val bounds = decodeBounds(path)
         // Both unrotated: the preview is stored the way the sensor wrote the photo.
@@ -106,7 +119,7 @@ private fun decodeThumbnail(path: String, signal: CancellationSignal): Bitmap? {
             }
         }
     }
-    return decodeSampled(path, THUMBNAIL_MAX_DIMENSION, signal)
+    return decodeSampled(path, maxDimension, signal)
 }
 
 private fun decodeBounds(path: String): BitmapFactory.Options =

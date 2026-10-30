@@ -36,11 +36,14 @@
     <string name="sort">Сортировка</string>
     <string name="order_name">По имени</string>
     <string name="order_date">Сначала новые</string>
-    <string name="order_count">Сначала большие</string>
+    <string name="order_count">По количеству файлов</string>
     <string name="setting_show_hidden">Показывать скрытые папки</string>
     <string name="folder_up">Вверх</string>
     <string name="folder_use_this">Выбрать эту папку</string>
     <string name="folder_no_subfolders">Папок внутри нет</string>
+    <string name="album_empty">В этом альбоме нет фото и видео</string>
+    <string name="reading_dates">Чтение дат %1$s из %2$s</string>
+    <string name="order_size">Сначала большие</string>
     <plurals name="file_count">
         <item quantity="one">%1$s файл</item>
         <item quantity="few">%1$s файла</item>

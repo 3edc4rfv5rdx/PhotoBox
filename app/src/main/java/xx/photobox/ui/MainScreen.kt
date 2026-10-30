@@ -24,6 +24,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import xx.photobox.AlbumOrder
 import xx.photobox.AppSettings
 import xx.photobox.GalleryViewModel
+import xx.photobox.ItemOrder
 import xx.photobox.R
 
 /** The screens besides the album's thumbnails, each opened from the ⋮ menu or the title. */
@@ -58,6 +60,8 @@ fun MainScreen(
     val context = LocalContext.current
     val albumOrder by AppSettings.albumOrder.collectAsState()
     val showHidden by AppSettings.showHidden.collectAsState()
+    val itemOrder by AppSettings.itemOrder.collectAsState()
+    val gridColumns by AppSettings.gridColumns.collectAsState()
     // Saveable: picking a language recreates the activity, and a plain
     // remember would drop the user back on the thumbnails mid-Settings.
     // With nothing to show — a first launch without a camera folder — the
@@ -67,11 +71,13 @@ fun MainScreen(
     }
     var menuOpen by remember { mutableStateOf(false) }
     var choosingOrder by remember { mutableStateOf(false) }
+    var choosingItemOrder by remember { mutableStateOf(false) }
     val backToThumbnails = { screen = Screen.THUMBNAILS }
 
     LaunchedEffect(screen) {
         if (screen == Screen.ALBUMS) vm.scanAlbums()
     }
+    LaunchedEffect(vm.album, vm.hasStorageAccess) { vm.loadItems() }
 
     Box(modifier.fillMaxSize()) {
         when (screen) {
@@ -161,7 +167,11 @@ fun MainScreen(
                                 menuOpen = false
                                 screen = Screen.TRASH
                             }
-                            // Runs through the open album once thumbnails are in.
+                            AppMenuItem(stringResource(R.string.sort), enabled = vm.album != null) {
+                                menuOpen = false
+                                choosingItemOrder = true
+                            }
+                            // Runs through the open album once the viewer is in.
                             AppMenuItem(stringResource(R.string.slideshow), enabled = false) {
                                 menuOpen = false
                             }
@@ -186,10 +196,35 @@ fun MainScreen(
                         action = { Button(onClick = { screen = Screen.ALBUMS }) { Text(stringResource(R.string.albums)) } },
                     )
 
-                    else -> EmptyState(icon = null, title = stringResource(R.string.not_ready))
+                    // Keyed by the album, so another one opens scrolled to its top.
+                    else -> key(vm.album) {
+                        ThumbnailsScreen(
+                            items = vm.items,
+                            datesDone = vm.datesDone,
+                            datesTotal = vm.datesTotal,
+                            order = itemOrder,
+                            columns = gridColumns,
+                            onColumns = { AppSettings.setGridColumns(context, it) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
             }
         }
+    }
+
+    if (screen == Screen.THUMBNAILS && choosingItemOrder) {
+        ChoiceDialog(
+            title = stringResource(R.string.sort),
+            options = ItemOrder.entries,
+            selected = itemOrder,
+            label = { stringResource(it.labelRes()) },
+            onDismiss = { choosingItemOrder = false },
+            onPick = {
+                AppSettings.setItemOrder(context, it)
+                choosingItemOrder = false
+            },
+        )
     }
 
     if (screen == Screen.ALBUMS) {
@@ -217,6 +252,12 @@ fun MainScreen(
             )
         }
     }
+}
+
+private fun ItemOrder.labelRes(): Int = when (this) {
+    ItemOrder.DATE -> R.string.order_date
+    ItemOrder.NAME -> R.string.order_name
+    ItemOrder.SIZE -> R.string.order_size
 }
 
 private fun AlbumOrder.labelRes(): Int = when (this) {

@@ -36,11 +36,14 @@
     <string name="sort">Sort</string>
     <string name="order_name">By name</string>
     <string name="order_date">Newest first</string>
-    <string name="order_count">Most files first</string>
+    <string name="order_count">By number of files</string>
     <string name="setting_show_hidden">Show hidden folders</string>
     <string name="folder_up">Up</string>
     <string name="folder_use_this">Use this folder</string>
     <string name="folder_no_subfolders">No folders inside</string>
+    <string name="album_empty">No photos or videos in this album</string>
+    <string name="reading_dates">Reading dates %1$s of %2$s</string>
+    <string name="order_size">Largest first</string>
     <plurals name="file_count">
         <item quantity="one">%1$s file</item>
         <item quantity="other">%1$s files</item>

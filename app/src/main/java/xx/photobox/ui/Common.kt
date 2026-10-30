@@ -1,5 +1,7 @@
 package xx.photobox.ui
 
+import android.content.Context
+import android.text.format.Formatter
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -129,6 +131,9 @@ fun PhotoBoxTheme(themeMode: ThemeMode, accentIndex: Int, content: @Composable (
 }
 
 // ---------- Text ----------
+
+/** A file size the way the system's own screens write it. */
+fun formatSize(context: Context, bytes: Long): String = Formatter.formatShortFileSize(context, bytes)
 
 /** A count in the device's own digit grouping. */
 fun formatCount(n: Int): String = NumberFormat.getIntegerInstance().format(n)

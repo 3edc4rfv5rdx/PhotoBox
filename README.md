@@ -18,6 +18,12 @@ Work in progress, built to `TZ.md`.
   listed only with "Show hidden folders" on in Settings. Tapping the album's
   name at the top opens the list. **+** makes a new album, in `Pictures` or any
   folder picked; it shows in the list once something is put in it.
+- **Thumbnails**: the open album as a grid, 2 to 5 across — pinch to change,
+  and the choice is kept. Newest first under a heading per day, or by name or
+  size from the ⋮ menu. A long album gets a bar on the right edge to drag
+  through it, showing the month, letter or size it has reached. The date is
+  when the photo or video was taken, from its EXIF or container, else the
+  file's own time; it is read once and cached.
 - **Folder access**: PhotoBox reads files directly and needs "All files access".
 
 ## Install

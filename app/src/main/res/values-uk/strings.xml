@@ -36,11 +36,14 @@
     <string name="sort">Сортування</string>
     <string name="order_name">За назвою</string>
     <string name="order_date">Спочатку нові</string>
-    <string name="order_count">Спочатку великі</string>
+    <string name="order_count">За кількістю файлів</string>
     <string name="setting_show_hidden">Показувати приховані папки</string>
     <string name="folder_up">Вгору</string>
     <string name="folder_use_this">Вибрати цю папку</string>
     <string name="folder_no_subfolders">Папок усередині немає</string>
+    <string name="album_empty">У цьому альбомі немає фото і відео</string>
+    <string name="reading_dates">Читання дат %1$s з %2$s</string>
+    <string name="order_size">Спочатку великі</string>
     <plurals name="file_count">
         <item quantity="one">%1$s файл</item>
         <item quantity="few">%1$s файли</item>

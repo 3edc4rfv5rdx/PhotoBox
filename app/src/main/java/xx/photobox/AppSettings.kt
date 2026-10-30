@@ -20,6 +20,10 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
 /** How many accents the palette offers; the colours themselves are in ui/Common.kt. */
 const val ACCENT_COUNT = 6
 
+/** How many thumbnails across a pinch can set. */
+val GRID_COLUMNS = 2..5
+const val DEFAULT_GRID_COLUMNS = 3
+
 /**
  * Process-wide settings, backed by SharedPreferences and exposed as [StateFlow]
  * for Compose. Call [load] once before the UI reads them.
@@ -32,6 +36,8 @@ object AppSettings {
     private const val KEY_SHOW_HIDDEN = "show_hidden"
     private const val KEY_ALBUM_ORDER = "album_order"
     private const val KEY_ALBUM_PATH = "album_path"
+    private const val KEY_GRID_COLUMNS = "grid_columns"
+    private const val KEY_ITEM_ORDER = "item_order"
 
     private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
@@ -46,12 +52,21 @@ object AppSettings {
     private val _albumOrder = MutableStateFlow(AlbumOrder.NAME)
     val albumOrder: StateFlow<AlbumOrder> = _albumOrder.asStateFlow()
 
+    /** Thumbnails across the screen, changed with a pinch. */
+    private val _gridColumns = MutableStateFlow(DEFAULT_GRID_COLUMNS)
+    val gridColumns: StateFlow<Int> = _gridColumns.asStateFlow()
+
+    private val _itemOrder = MutableStateFlow(ItemOrder.DATE)
+    val itemOrder: StateFlow<ItemOrder> = _itemOrder.asStateFlow()
+
     fun load(context: Context) {
         val prefs = prefs(context)
         _themeMode.value = enumOr(prefs.getString(KEY_THEME, null), ThemeMode.SYSTEM)
         _accentIndex.value = prefs.getInt(KEY_ACCENT, 0).coerceIn(0, ACCENT_COUNT - 1)
         _showHidden.value = prefs.getBoolean(KEY_SHOW_HIDDEN, false)
         _albumOrder.value = enumOr(prefs.getString(KEY_ALBUM_ORDER, null), AlbumOrder.NAME)
+        _gridColumns.value = prefs.getInt(KEY_GRID_COLUMNS, DEFAULT_GRID_COLUMNS).coerceIn(GRID_COLUMNS)
+        _itemOrder.value = enumOr(prefs.getString(KEY_ITEM_ORDER, null), ItemOrder.DATE)
     }
 
     fun setThemeMode(context: Context, mode: ThemeMode) {
@@ -73,6 +88,17 @@ object AppSettings {
     fun setAlbumOrder(context: Context, order: AlbumOrder) {
         _albumOrder.value = order
         prefs(context).edit { putString(KEY_ALBUM_ORDER, order.name) }
+    }
+
+    fun setGridColumns(context: Context, columns: Int) {
+        val clamped = columns.coerceIn(GRID_COLUMNS)
+        _gridColumns.value = clamped
+        prefs(context).edit { putInt(KEY_GRID_COLUMNS, clamped) }
+    }
+
+    fun setItemOrder(context: Context, order: ItemOrder) {
+        _itemOrder.value = order
+        prefs(context).edit { putString(KEY_ITEM_ORDER, order.name) }
     }
 
     /** The album open last, kept across launches. Null before one was ever opened. */
