@@ -94,20 +94,17 @@ fun sortAlbums(albums: List<Album>, order: AlbumOrder): List<Album> {
     return albums.sortedWith(comparator)
 }
 
-/** Why a name cannot become a new album in its folder, or [OK]. */
-enum class AlbumNameCheck { OK, EMPTY, INVALID, EXISTS }
-
 /**
  * Whether a folder named [name] can be made in [parent]. Leading and trailing
  * spaces do not count. A slash would make a path, and "." or ".." name a folder
  * that is already there.
  */
-fun checkAlbumName(parent: File, name: String): AlbumNameCheck {
+fun checkAlbumName(parent: File, name: String): NameCheck {
     val trimmed = name.trim()
     return when {
-        trimmed.isEmpty() -> AlbumNameCheck.EMPTY
-        '/' in trimmed || '\u0000' in trimmed || trimmed == "." || trimmed == ".." -> AlbumNameCheck.INVALID
-        File(parent, trimmed).exists() -> AlbumNameCheck.EXISTS
-        else -> AlbumNameCheck.OK
+        trimmed.isEmpty() -> NameCheck.EMPTY
+        isBadName(trimmed) -> NameCheck.INVALID
+        File(parent, trimmed).exists() -> NameCheck.EXISTS
+        else -> NameCheck.OK
     }
 }

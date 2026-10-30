@@ -108,11 +108,11 @@ class AlbumsTest {
     @Test
     fun albumNameCheck() {
         File(tmp.root, "Taken").mkdirs()
-        assertEquals(AlbumNameCheck.EMPTY, checkAlbumName(tmp.root, "   "))
-        assertEquals(AlbumNameCheck.INVALID, checkAlbumName(tmp.root, "a/b"))
-        assertEquals(AlbumNameCheck.INVALID, checkAlbumName(tmp.root, ".."))
-        assertEquals(AlbumNameCheck.EXISTS, checkAlbumName(tmp.root, " Taken "))
-        assertEquals(AlbumNameCheck.OK, checkAlbumName(tmp.root, "Trips"))
+        assertEquals(NameCheck.EMPTY, checkAlbumName(tmp.root, "   "))
+        assertEquals(NameCheck.INVALID, checkAlbumName(tmp.root, "a/b"))
+        assertEquals(NameCheck.INVALID, checkAlbumName(tmp.root, ".."))
+        assertEquals(NameCheck.EXISTS, checkAlbumName(tmp.root, " Taken "))
+        assertEquals(NameCheck.OK, checkAlbumName(tmp.root, "Trips"))
     }
 
     @Test

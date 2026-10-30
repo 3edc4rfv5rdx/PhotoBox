@@ -40,7 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import xx.photobox.Album
 import xx.photobox.AlbumDraft
-import xx.photobox.AlbumNameCheck
+import xx.photobox.NameCheck
 import xx.photobox.AlbumOrder
 import xx.photobox.R
 import xx.photobox.checkAlbumName
@@ -288,7 +288,7 @@ fun NewAlbumDialog(
         title = { Text(stringResource(R.string.new_album)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                FolderNameField(draft.name, onName, check, failed)
+                NameField(draft.name, onName, check, if (failed) stringResource(R.string.album_create_failed) else null)
                 Text(stringResource(R.string.album_parent), style = MaterialTheme.typography.bodyMedium)
                 Row(
                     Modifier.fillMaxWidth().clickable(onClick = onPickParent).padding(vertical = 4.dp),
@@ -306,7 +306,7 @@ fun NewAlbumDialog(
             }
         },
         confirmButton = {
-            DialogConfirmButton(stringResource(R.string.create), enabled = check == AlbumNameCheck.OK, onClick = onCreate)
+            DialogConfirmButton(stringResource(R.string.create), enabled = check == NameCheck.OK, onClick = onCreate)
         },
         dismissButton = { DialogDismissButton(stringResource(R.string.cancel), onDismiss) },
     )

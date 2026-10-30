@@ -118,4 +118,6 @@
     <string name="copy_failed">Not everything could be copied</string>
     <string name="new_folder">New folder</string>
     <string name="delete_album">Delete album</string>
+    <string name="rename">Rename</string>
+    <string name="rename_failed">Could not rename</string>
 </resources>

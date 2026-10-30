@@ -108,6 +108,8 @@ fun MainScreen(
     // The files on their way to another folder while it is picked, by path, and whether moved or copied.
     var transferPaths by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var transferMode by rememberSaveable { mutableStateOf(Transfer.MOVE) }
+    // The file whose new name is being typed.
+    var renamingPath by rememberSaveable { mutableStateOf<String?>(null) }
     val pickTransferTarget = { paths: List<String>, mode: Transfer ->
         transferPaths = paths
         transferMode = mode
@@ -322,6 +324,10 @@ fun MainScreen(
                                         selectionMenuOpen = false
                                         selection = sorted.orEmpty().mapTo(LinkedHashSet()) { it.file.path }
                                     }
+                                    AppMenuItem(stringResource(R.string.rename), enabled = !vm.busy && picked.size == 1) {
+                                        selectionMenuOpen = false
+                                        renamingPath = picked.firstOrNull()?.file?.path
+                                    }
                                     AppMenuItem(stringResource(R.string.move), enabled = !vm.busy) {
                                         selectionMenuOpen = false
                                         pickTransferTarget(picked.map { it.file.path }, Transfer.MOVE)
@@ -443,6 +449,7 @@ fun MainScreen(
                             startPath = open,
                             onPage = { viewerPath = it },
                             onShare = { shareFiles(context, listOf(it.file)) },
+                            onRename = { renamingPath = it.file.path },
                             onTransfer = { item, mode -> pickTransferTarget(listOf(item.file.path), mode) },
                             onDelete = { item ->
                                 // One at a time: a second tap while the first is under way does nothing.
@@ -482,6 +489,7 @@ fun MainScreen(
                     trashViewed = it
                 },
                 onShare = null,
+                onRename = null,
                 onTransfer = null,
                 onDelete = null,
                 onClose = { trashViewerPath = null },
@@ -501,6 +509,25 @@ fun MainScreen(
                 confirmTrash = null
                 if (step == TrashStep.EMPTY) vm.emptyTrash() else vm.restoreAll()
             },
+        )
+    }
+
+    renamingPath?.takeIf { screen == Screen.THUMBNAILS }?.let { path ->
+        RenameDialog(
+            file = File(path),
+            onRename = { base, onFailed ->
+                vm.rename(File(path), base) { renamed ->
+                    if (renamed == null) {
+                        onFailed()
+                    } else {
+                        renamingPath = null
+                        // The viewer and the pick follow the file to its new name.
+                        if (viewerPath == path) viewerPath = renamed.path
+                        if (path in selection) selection = selection - path + renamed.path
+                    }
+                }
+            },
+            onDismiss = { renamingPath = null },
         )
     }
 

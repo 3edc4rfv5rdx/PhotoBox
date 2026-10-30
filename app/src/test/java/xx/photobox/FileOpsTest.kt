@@ -87,6 +87,29 @@ class FileOpsTest {
     }
 
     @Test
+    fun renameKeepsEachExtensionAndTakesTheRawAlong() {
+        val photo = file("A/p.jpg")
+        file("A/p.dng")
+        val moves = renameTargets(photo, "trip")
+        assertEquals(listOf("p.jpg" to "trip.jpg", "p.dng" to "trip.dng"), moves.map { (a, b) -> a.name to b.name })
+    }
+
+    @Test
+    fun renameCheck() {
+        val photo = file("A/p.jpg")
+        file("A/taken.jpg")
+        // Only the RAW of the name is there: the pair would still clash.
+        file("A/rawonly.dng")
+        file("A/p.dng")
+        assertEquals(NameCheck.EMPTY, checkRename(photo, "  "))
+        assertEquals(NameCheck.INVALID, checkRename(photo, "a/b"))
+        assertEquals(NameCheck.UNCHANGED, checkRename(photo, " p "))
+        assertEquals(NameCheck.EXISTS, checkRename(photo, "taken"))
+        assertEquals(NameCheck.EXISTS, checkRename(photo, "rawonly"))
+        assertEquals(NameCheck.OK, checkRename(photo, "trip"))
+    }
+
+    @Test
     fun intoAFolderThatIsNotThereNothingMoves() {
         val photo = file("A/p.jpg")
         assertNull(transferGroup(listOf(photo), File(tmp.root, "Missing"), Transfer.MOVE))

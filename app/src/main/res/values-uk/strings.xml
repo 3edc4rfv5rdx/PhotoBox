@@ -122,4 +122,6 @@
     <string name="copy_failed">Не все вдалося скопіювати</string>
     <string name="new_folder">Нова папка</string>
     <string name="delete_album">Видалити альбом</string>
+    <string name="rename">Перейменувати</string>
+    <string name="rename_failed">Не вдалося перейменувати</string>
 </resources>

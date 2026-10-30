@@ -37,7 +37,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import xx.photobox.AlbumNameCheck
+import xx.photobox.NameCheck
 import xx.photobox.R
 import xx.photobox.checkAlbumName
 import xx.photobox.storageRoots
@@ -159,18 +159,18 @@ private fun NewFolderDialog(parent: File, onCreated: (File) -> Unit, onDismiss: 
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.new_folder)) },
         text = {
-            FolderNameField(
+            NameField(
                 name = name,
                 onName = {
                     name = it
                     failed = false
                 },
                 check = check,
-                failed = failed,
+                failure = if (failed) stringResource(R.string.album_create_failed) else null,
             )
         },
         confirmButton = {
-            DialogConfirmButton(stringResource(R.string.create), enabled = check == AlbumNameCheck.OK) {
+            DialogConfirmButton(stringResource(R.string.create), enabled = check == NameCheck.OK) {
                 val dir = File(parent, name.trim())
                 if (dir.mkdir()) onCreated(dir) else failed = true
             }
@@ -179,13 +179,17 @@ private fun NewFolderDialog(parent: File, onCreated: (File) -> Unit, onDismiss: 
     )
 }
 
-/** A folder's name being typed, with what is wrong with it — [check], or [failed] to make it — underneath. */
+/**
+ * A name being typed — a new folder's, or a file's without its [suffix] —
+ * with what is wrong with it underneath: [check], or [failure] when the last
+ * try at it did not work.
+ */
 @Composable
-internal fun FolderNameField(name: String, onName: (String) -> Unit, check: AlbumNameCheck, failed: Boolean) {
+internal fun NameField(name: String, onName: (String) -> Unit, check: NameCheck, failure: String?, suffix: String? = null) {
     val error = when {
-        failed -> stringResource(R.string.album_create_failed)
-        check == AlbumNameCheck.INVALID -> stringResource(R.string.album_name_invalid)
-        check == AlbumNameCheck.EXISTS -> stringResource(R.string.album_name_exists)
+        failure != null -> failure
+        check == NameCheck.INVALID -> stringResource(R.string.album_name_invalid)
+        check == NameCheck.EXISTS -> stringResource(R.string.album_name_exists)
         else -> null
     }
     OutlinedTextField(
@@ -193,6 +197,7 @@ internal fun FolderNameField(name: String, onName: (String) -> Unit, check: Albu
         onValueChange = onName,
         label = { Text(stringResource(R.string.album_name)) },
         singleLine = true,
+        suffix = suffix?.let { { Text(it) } },
         isError = error != null,
         supportingText = error?.let { { Text(it) } },
         modifier = Modifier.fillMaxWidth(),

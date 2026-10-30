@@ -18,6 +18,43 @@ fun renameAll(from: List<File>, to: List<File>): Boolean {
     return true
 }
 
+/** Why a name cannot be given — to a new folder, or to a file renamed — or [OK]. [UNCHANGED]: a file's own name. */
+enum class NameCheck { OK, EMPTY, INVALID, EXISTS, UNCHANGED }
+
+/** A name no file can have: a slash would make it a path, and "." or ".." name a folder that is already there. */
+internal fun isBadName(name: String): Boolean = '/' in name || '\u0000' in name || name == "." || name == ".."
+
+/**
+ * Where renaming [file] to [base] takes it and its RAW companions: each keeps
+ * its own extension, so a photo and its RAW stay a pair.
+ */
+fun renameTargets(file: File, base: String): List<Pair<File, File>> =
+    (listOf(file) + companionsOf(file)).map { from ->
+        from to File(from.parentFile, if (from.extension.isEmpty()) base else "$base.${from.extension}")
+    }
+
+/**
+ * Whether [file] can be renamed to [base], the name without its extension.
+ * Leading and trailing spaces do not count. A target that is the very file
+ * renamed — a change of case on storage that ignores case — is no clash.
+ */
+fun checkRename(file: File, base: String): NameCheck {
+    val trimmed = base.trim()
+    return when {
+        trimmed.isEmpty() -> NameCheck.EMPTY
+        isBadName(trimmed) -> NameCheck.INVALID
+        trimmed == file.nameWithoutExtension -> NameCheck.UNCHANGED
+        renameTargets(file, trimmed).any { (from, to) -> to.exists() && !isSameFile(from, to) } -> NameCheck.EXISTS
+        else -> NameCheck.OK
+    }
+}
+
+private fun isSameFile(a: File, b: File): Boolean = try {
+    Files.isSameFile(a.toPath(), b.toPath())
+} catch (e: IOException) {
+    false
+}
+
 enum class Transfer { MOVE, COPY }
 
 /**

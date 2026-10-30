@@ -91,8 +91,9 @@ private val PLAY_ICON = 56.dp
  * [startPath]. A swipe goes to the next or previous one; a pinch or a double
  * tap zooms, and while zoomed a drag moves the photo instead of the page. A
  * tap shows or hides the bar on top, whose ⋮ has the file's info, and sends
- * it to another app through [onShare], to another folder through
- * [onTransfer] or to the trash through [onDelete], when there are those. [onPage] hears each file settled on, so
+ * it to another app through [onShare], renames it through [onRename], sends
+ * it to another folder through [onTransfer] or to the trash through
+ * [onDelete], when there are those. [onPage] hears each file settled on, so
  * the caller can open on it again after the list is reloaded.
  */
 @Composable
@@ -101,6 +102,7 @@ fun ViewerScreen(
     startPath: String,
     onPage: (String) -> Unit,
     onShare: ((MediaItem) -> Unit)?,
+    onRename: ((MediaItem) -> Unit)?,
     onTransfer: ((MediaItem, Transfer) -> Unit)?,
     onDelete: ((MediaItem) -> Unit)?,
     onClose: () -> Unit,
@@ -206,6 +208,12 @@ fun ViewerScreen(
                             AppMenuItem(stringResource(R.string.share), enabled = current != null) {
                                 menuOpen = false
                                 current?.let(onShare)
+                            }
+                        }
+                        if (onRename != null) {
+                            AppMenuItem(stringResource(R.string.rename), enabled = current != null) {
+                                menuOpen = false
+                                current?.let(onRename)
                             }
                         }
                         if (onTransfer != null) {

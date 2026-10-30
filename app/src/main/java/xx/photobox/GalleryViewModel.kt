@@ -262,7 +262,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
      */
     fun createAlbum(onCreated: () -> Unit) {
         val current = draft ?: return
-        if (creating || checkAlbumName(current.parent, current.name) != AlbumNameCheck.OK) return
+        if (creating || checkAlbumName(current.parent, current.name) != NameCheck.OK) return
         val dir = File(current.parent, current.name.trim())
         creating = true
         viewModelScope.launch {
@@ -376,6 +376,28 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
             }
             if (failed > 0) notice = if (mode == Transfer.MOVE) FileNotice.MOVE_FAILED else FileNotice.COPY_FAILED
             onDone(failed == 0)
+            loadItems()
+        }
+    }
+
+    /**
+     * Renames [file] and its RAW companions to [base], all or none. [onDone]
+     * hears the file's new place, or null when it could not be renamed; the
+     * open album is read again either way.
+     */
+    fun rename(file: File, base: String, onDone: (File?) -> Unit) {
+        if (busy) return
+        viewModelScope.launch {
+            val renamed = withContext(Dispatchers.IO) {
+                val moves = renameTargets(file, base.trim())
+                if (renameAll(moves.map { it.first }, moves.map { it.second })) {
+                    announceChanged(getApplication(), moves.flatMap { (from, to) -> listOf(from.path, to.path) })
+                    moves[0].second
+                } else {
+                    null
+                }
+            }
+            onDone(renamed)
             loadItems()
         }
     }
