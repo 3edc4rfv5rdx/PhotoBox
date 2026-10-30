@@ -32,10 +32,18 @@ Work in progress, built to `TZ.md`.
 - **Picking files**: a long tap on a thumbnail picks it, and while anything
   is picked a tap picks or drops more; ⋮ → Select all picks the whole album.
   The bar on top then shares them with another app or moves them to the
-  trash; ← or Back drops the pick.
+  trash, and its ⋮ moves or copies them; ← or Back drops the pick.
+- **Move and copy**: from the picked files' ⋮ or the viewer's, into a folder
+  chosen in PhotoBox's own folder list, where + makes a new one. A RAW
+  beside a photo goes with it. A name already taken there gets " (1)",
+  " (2)" … — the same number on a photo and its RAW — so nothing is
+  overwritten. Onto the SD card from the phone, or back, a move is a copy
+  followed by deleting the original once the copy is whole. Moving, copying
+  and trashing many files show how far they have got.
 - **Viewer**: a tap on a thumbnail opens it full screen, in the grid's order.
   Swipe to the next or previous file; pinch or double-tap to zoom, and drag
-  while zoomed. A tap hides or shows the bar on top, whose ⋮ shares the file.
+  while zoomed. A tap hides or shows the bar on top, whose ⋮ shares, moves or
+  copies the file.
   A video shows a still
   with a play button: it plays in PhotoBox's own player — play and pause, the
   time and a seek bar, hidden and shown by a tap — or in another app with

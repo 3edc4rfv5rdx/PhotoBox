@@ -107,4 +107,14 @@
     <string name="share">Share</string>
     <string name="select_all">Select all</string>
     <string name="selected_count">%1$s selected</string>
+    <string name="move">Move</string>
+    <string name="copy">Copy</string>
+    <string name="move_to">Move to</string>
+    <string name="copy_to">Copy to</string>
+    <string name="moving">Moved %1$s of %2$s</string>
+    <string name="copying">Copied %1$s of %2$s</string>
+    <string name="trashing">Moved to the trash %1$s of %2$s</string>
+    <string name="move_failed">Not everything could be moved</string>
+    <string name="copy_failed">Not everything could be copied</string>
+    <string name="new_folder">New folder</string>
 </resources>

@@ -19,7 +19,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -235,26 +234,12 @@ fun NewAlbumDialog(
     onDismiss: () -> Unit,
 ) {
     val check = checkAlbumName(draft.parent, draft.name)
-    val error = when {
-        failed -> stringResource(R.string.album_create_failed)
-        check == AlbumNameCheck.INVALID -> stringResource(R.string.album_name_invalid)
-        check == AlbumNameCheck.EXISTS -> stringResource(R.string.album_name_exists)
-        else -> null
-    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.new_album)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = draft.name,
-                    onValueChange = onName,
-                    label = { Text(stringResource(R.string.album_name)) },
-                    singleLine = true,
-                    isError = error != null,
-                    supportingText = error?.let { { Text(it) } },
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                FolderNameField(draft.name, onName, check, failed)
                 Text(stringResource(R.string.album_parent), style = MaterialTheme.typography.bodyMedium)
                 Row(
                     Modifier.fillMaxWidth().clickable(onClick = onPickParent).padding(vertical = 4.dp),

@@ -13,11 +13,14 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -34,7 +37,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import xx.photobox.AlbumNameCheck
 import xx.photobox.R
+import xx.photobox.checkAlbumName
 import xx.photobox.storageRoots
 import java.io.File
 
@@ -46,7 +51,7 @@ import java.io.File
  * SD card as readily as internal storage. [start] is the folder it opens on.
  *
  * An empty [path] means the list of volumes, which is only shown when the
- * device has more than one.
+ * device has more than one. + in a folder makes a new one inside it and goes in.
  */
 @Composable
 fun FolderPickerScreen(start: File?, onPick: (File) -> Unit, modifier: Modifier = Modifier) {
@@ -57,6 +62,7 @@ fun FolderPickerScreen(start: File?, onPick: (File) -> Unit, modifier: Modifier 
     }
     val current = path.takeIf { it.isNotEmpty() }?.let(::File)
     val atRoot = roots.any { it.dir.path == path }
+    var naming by rememberSaveable { mutableStateOf(false) }
 
     Column(modifier.fillMaxSize()) {
         if (current != null) {
@@ -79,6 +85,9 @@ fun FolderPickerScreen(start: File?, onPick: (File) -> Unit, modifier: Modifier 
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
+                IconButton(onClick = { naming = true }) {
+                    Icon(Icons.Filled.Add, stringResource(R.string.new_folder))
+                }
             }
             HorizontalDivider()
         }
@@ -127,6 +136,67 @@ fun FolderPickerScreen(start: File?, onPick: (File) -> Unit, modifier: Modifier 
             }
         }
     }
+
+    if (naming && current != null) {
+        NewFolderDialog(
+            parent = current,
+            onCreated = {
+                naming = false
+                path = it.path
+            },
+            onDismiss = { naming = false },
+        )
+    }
+}
+
+/** The name of a new folder inside [parent]; Create stays off until the name would work. */
+@Composable
+private fun NewFolderDialog(parent: File, onCreated: (File) -> Unit, onDismiss: () -> Unit) {
+    var name by rememberSaveable { mutableStateOf("") }
+    var failed by remember { mutableStateOf(false) }
+    val check = checkAlbumName(parent, name)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.new_folder)) },
+        text = {
+            FolderNameField(
+                name = name,
+                onName = {
+                    name = it
+                    failed = false
+                },
+                check = check,
+                failed = failed,
+            )
+        },
+        confirmButton = {
+            DialogConfirmButton(stringResource(R.string.create), enabled = check == AlbumNameCheck.OK) {
+                val dir = File(parent, name.trim())
+                if (dir.mkdir()) onCreated(dir) else failed = true
+            }
+        },
+        dismissButton = { DialogDismissButton(stringResource(R.string.cancel), onDismiss) },
+    )
+}
+
+/** A folder's name being typed, with what is wrong with it — [check], or [failed] to make it — underneath. */
+@Composable
+internal fun FolderNameField(name: String, onName: (String) -> Unit, check: AlbumNameCheck, failed: Boolean) {
+    val error = when {
+        failed -> stringResource(R.string.album_create_failed)
+        check == AlbumNameCheck.INVALID -> stringResource(R.string.album_name_invalid)
+        check == AlbumNameCheck.EXISTS -> stringResource(R.string.album_name_exists)
+        else -> null
+    }
+    OutlinedTextField(
+        value = name,
+        onValueChange = onName,
+        label = { Text(stringResource(R.string.album_name)) },
+        singleLine = true,
+        isError = error != null,
+        supportingText = error?.let { { Text(it) } },
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable

@@ -9,6 +9,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
@@ -85,9 +86,21 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     var trashJobTotal by mutableIntStateOf(0)
         private set
 
-    /** What the last trash step has to say, for a toast; cleared once said. */
-    var trashNotice by mutableStateOf<TrashNotice?>(null)
+    /** What the last step on files has to say, for a toast; cleared once said. */
+    var notice by mutableStateOf<FileNotice?>(null)
         private set
+
+    /** Moving, copying or trashing the album's files while it runs, with how far it has got; null otherwise. */
+    var fileJob by mutableStateOf<FileJob?>(null)
+        private set
+    var fileJobDone by mutableIntStateOf(0)
+        private set
+    var fileJobTotal by mutableIntStateOf(0)
+        private set
+
+    /** Whether files are being changed — the trash, or the album's files moved, copied or trashed — so nothing else starts meanwhile. */
+    val busy: Boolean
+        get() = trashBusy || fileJob != null
 
     /** The new-album dialog's contents while it is open, or while its folder is being picked. */
     var draft by mutableStateOf<AlbumDraft?>(null)
@@ -297,32 +310,89 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
 
     /**
      * Moves [files], each with its RAW companions, into the trash of its own
-     * volume. [onDone] hears whether all of them went, on the main thread; the
-     * open album is read again either way.
+     * volume, with progress in [fileJobDone] of [fileJobTotal]. [onDone] hears
+     * whether all of them went, on the main thread; the open album is read
+     * again either way.
      */
     fun moveToTrash(files: List<File>, onDone: (Boolean) -> Unit = {}) {
-        if (trashBusy || files.isEmpty()) return
+        if (busy || files.isEmpty()) return
         trashBusy = true
         viewModelScope.launch {
-            val allMoved = withContext(Dispatchers.IO) {
-                val gone = mutableListOf<String>()
-                var failed = 0
-                for (file in files) {
-                    val companions = companionsOf(file)
-                    val trashDir = volumeRootOf(getApplication(), file)?.let(Trash::dirOn)
-                    if (trashDir != null && Trash.moveToTrash(file, trashDir, System.currentTimeMillis())) {
-                        gone += (listOf(file) + companions).map { it.path }
-                    } else {
-                        failed++
-                    }
+            val failed = runFileJob(FileJob.TRASH, files) { file ->
+                val group = listOf(file) + companionsOf(file)
+                val trashDir = volumeRootOf(getApplication(), file)?.let(Trash::dirOn)
+                if (trashDir != null && Trash.moveToTrash(file, trashDir, System.currentTimeMillis())) {
+                    group.map { it.path }
+                } else {
+                    null
                 }
-                if (gone.isNotEmpty()) announceChanged(getApplication(), gone)
-                failed == 0
             }
             trashBusy = false
-            if (!allMoved) trashNotice = TrashNotice.DELETE_FAILED
-            onDone(allMoved)
+            if (failed > 0) notice = FileNotice.DELETE_FAILED
+            onDone(failed == 0)
             loadItems()
+        }
+    }
+
+    /**
+     * Moves or copies [files], each with its RAW companions, into [dir], with
+     * progress in [fileJobDone] of [fileJobTotal]. A file moved into the
+     * folder it is in stays as it is. [onDone] hears whether all of them went;
+     * the open album is read again either way.
+     */
+    fun transfer(files: List<File>, dir: File, mode: Transfer, onDone: (Boolean) -> Unit = {}) {
+        if (busy) return
+        val groups = files.filter { mode == Transfer.COPY || it.parentFile?.path != dir.path }
+        if (groups.isEmpty()) {
+            onDone(true)
+            return
+        }
+        viewModelScope.launch {
+            val job = if (mode == Transfer.MOVE) FileJob.MOVE else FileJob.COPY
+            val failed = runFileJob(job, groups) { file ->
+                val group = listOf(file) + companionsOf(file)
+                transferGroup(group, dir, mode)?.let { targets ->
+                    targets.map { it.path } + if (mode == Transfer.MOVE) group.map { it.path } else emptyList()
+                }
+            }
+            if (failed > 0) notice = if (mode == Transfer.MOVE) FileNotice.MOVE_FAILED else FileNotice.COPY_FAILED
+            onDone(failed == 0)
+            loadItems()
+        }
+    }
+
+    /**
+     * Runs [step] on each of [files] off the main thread as [job], counting
+     * them into [fileJobDone]. A step returns the paths it changed, for the
+     * system's media index, or null when it failed. How many failed.
+     */
+    private suspend fun runFileJob(job: FileJob, files: List<File>, step: (File) -> List<String>?): Int {
+        fileJob = job
+        fileJobTotal = files.size
+        fileJobDone = 0
+        val done = AtomicInteger(0)
+        return coroutineScope {
+            // Counted on the worker, shown from here: Compose state is not written from other threads.
+            val ticker = launch {
+                while (true) {
+                    fileJobDone = done.get()
+                    delay(PROGRESS_TICK_MS)
+                }
+            }
+            val failed = withContext(Dispatchers.IO) {
+                val changed = mutableListOf<String>()
+                var failed = 0
+                for (file in files) {
+                    val paths = step(file)
+                    if (paths == null) failed++ else changed += paths
+                    done.incrementAndGet()
+                }
+                announceChanged(getApplication(), changed)
+                failed
+            }
+            ticker.cancel()
+            fileJob = null
+            failed
         }
     }
 
@@ -332,13 +402,13 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
                 announceChanged(getApplication(), listOf(entry.original.path))
                 null
             }
-            RestoreResult.EXISTS -> TrashNotice.RESTORE_EXISTS
-            RestoreResult.FAILED -> TrashNotice.RESTORE_FAILED
+            RestoreResult.EXISTS -> FileNotice.RESTORE_EXISTS
+            RestoreResult.FAILED -> FileNotice.RESTORE_FAILED
         }
     }
 
     fun purge(entry: TrashEntry) = changeTrash {
-        if (Trash.purge(entry)) null else TrashNotice.DELETE_FAILED
+        if (Trash.purge(entry)) null else FileNotice.DELETE_FAILED
     }
 
     /** Puts back everything it can; what would land on a file already there stays in the trash. */
@@ -367,8 +437,8 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
             val failed = entries.count { entry -> !step(entry).also { done.incrementAndGet() } }
             when {
                 failed == 0 -> null
-                job == TrashJob.RESTORE -> TrashNotice.RESTORE_SOME_LEFT
-                else -> TrashNotice.DELETE_FAILED
+                job == TrashJob.RESTORE -> FileNotice.RESTORE_SOME_LEFT
+                else -> FileNotice.DELETE_FAILED
             }
         }
         // Counted on the worker, shown from here: Compose state is not written from other threads.
@@ -381,19 +451,19 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun noticeShown() {
-        trashNotice = null
+        notice = null
     }
 
     /** Runs [step] off the main thread with the trash marked busy, then reads the trash and the open album again. */
-    private fun changeTrash(step: () -> TrashNotice?) {
+    private fun changeTrash(step: () -> FileNotice?) {
         if (trashBusy) return
         trashBusy = true
         viewModelScope.launch {
-            val notice = withContext(Dispatchers.IO) { step() }
+            val said = withContext(Dispatchers.IO) { step() }
             trashEntries = withContext(Dispatchers.IO) { Trash.list(trashDirs()) }
             trashBusy = false
             trashJob = null
-            notice?.let { trashNotice = it }
+            said?.let { notice = it }
             loadItems()
         }
     }
@@ -402,7 +472,10 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
 /** A step on the whole trash, shown with its progress while it runs. */
 enum class TrashJob { RESTORE, EMPTY }
 
-/** What a trash step reports when it did not all go as asked. */
-enum class TrashNotice { DELETE_FAILED, RESTORE_EXISTS, RESTORE_FAILED, RESTORE_SOME_LEFT }
+/** A step on the album's files, shown with its progress while it runs. */
+enum class FileJob { MOVE, COPY, TRASH }
+
+/** What a step on files reports when it did not all go as asked. */
+enum class FileNotice { DELETE_FAILED, RESTORE_EXISTS, RESTORE_FAILED, RESTORE_SOME_LEFT, MOVE_FAILED, COPY_FAILED }
 
 private const val DAY_MS = 24L * 60 * 60 * 1000

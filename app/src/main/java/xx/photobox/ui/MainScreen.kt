@@ -2,7 +2,9 @@ package xx.photobox.ui
 
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,6 +37,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,12 +48,15 @@ import xx.photobox.GalleryViewModel
 import xx.photobox.ItemOrder
 import xx.photobox.MediaItem
 import xx.photobox.R
-import xx.photobox.TrashNotice
+import xx.photobox.Transfer
+import xx.photobox.FileJob
+import xx.photobox.FileNotice
 import xx.photobox.isVideo
 import xx.photobox.sortItems
+import java.io.File
 
 /** The screens besides the album's thumbnails, each opened from the ⋮ menu or the title. */
-private enum class Screen { THUMBNAILS, ALBUMS, NEW_ALBUM_PARENT, ADD_ROOT, TRASH, SETTINGS }
+private enum class Screen { THUMBNAILS, ALBUMS, NEW_ALBUM_PARENT, ADD_ROOT, TRANSFER_TARGET, TRASH, SETTINGS }
 
 /**
  * The whole app: the open album's thumbnails, with ✕ to leave on the left, the
@@ -99,6 +105,21 @@ fun MainScreen(
     var selection by rememberSaveable(vm.album?.path) { mutableStateOf(emptySet<String>()) }
     val picked = remember(sorted, selection) { sorted?.filter { it.file.path in selection }.orEmpty() }
     var selectionMenuOpen by remember { mutableStateOf(false) }
+    // The files on their way to another folder while it is picked, by path, and whether moved or copied.
+    var transferPaths by rememberSaveable { mutableStateOf(emptyList<String>()) }
+    var transferMode by rememberSaveable { mutableStateOf(Transfer.MOVE) }
+    val pickTransferTarget = { paths: List<String>, mode: Transfer ->
+        transferPaths = paths
+        transferMode = mode
+        screen = Screen.TRANSFER_TARGET
+    }
+    // The viewer, open on a file about to leave the album, goes on to a
+    // neighbour first, so it opens on that once the album has been read again.
+    fun stepViewerOffOf(path: String) {
+        val list = sorted ?: return
+        val at = list.indexOfFirst { it.file.path == path }
+        if (at >= 0 && viewerPath == path) viewerPath = (list.getOrNull(at + 1) ?: list.getOrNull(at - 1))?.file?.path
+    }
     val slideSeconds by AppSettings.slideSeconds.collectAsState()
     // Where the running slideshow started; null while none runs.
     var slideshowStart by rememberSaveable { mutableStateOf<Int?>(null) }
@@ -110,7 +131,7 @@ fun MainScreen(
         if (screen == Screen.ALBUMS) vm.scanAlbums()
         if (screen == Screen.TRASH) vm.loadTrash()
     }
-    vm.trashNotice?.let { notice ->
+    vm.notice?.let { notice ->
         LaunchedEffect(notice) {
             Toast.makeText(context, notice.messageRes(), Toast.LENGTH_SHORT).show()
             vm.noticeShown()
@@ -200,6 +221,32 @@ fun MainScreen(
                 )
             }
 
+            Screen.TRANSFER_TARGET -> AppScreen(
+                title = stringResource(if (transferMode == Transfer.MOVE) R.string.move_to else R.string.copy_to),
+                onBack = backToThumbnails,
+            ) {
+                FolderPickerScreen(
+                    // Beside the album: another album is the likeliest place.
+                    start = vm.album?.parentFile,
+                    onPick = { dir ->
+                        val paths = transferPaths
+                        val open = viewerPath
+                        if (open != null && transferMode == Transfer.MOVE && open in paths && File(open).parent != dir.path) {
+                            stepViewerOffOf(open)
+                        }
+                        vm.transfer(paths.map(::File), dir, transferMode) { all ->
+                            when {
+                                all -> selection = emptySet()
+                                // Still in the album: the viewer goes back to it, unless closed meanwhile.
+                                open != null && viewerPath != null && File(open).exists() -> viewerPath = open
+                            }
+                        }
+                        screen = Screen.THUMBNAILS
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
             Screen.TRASH -> AppScreen(
                 title = stringResource(R.string.trash),
                 onBack = backToThumbnails,
@@ -264,7 +311,7 @@ fun MainScreen(
                                 Icons.Filled.Delete,
                                 stringResource(R.string.to_trash),
                                 { vm.moveToTrash(picked.map { it.file }) },
-                                enabled = !vm.trashBusy,
+                                enabled = !vm.busy,
                             )
                             Box {
                                 MoreButton(onClick = { selectionMenuOpen = true })
@@ -272,6 +319,14 @@ fun MainScreen(
                                     AppMenuItem(stringResource(R.string.select_all)) {
                                         selectionMenuOpen = false
                                         selection = sorted.orEmpty().mapTo(LinkedHashSet()) { it.file.path }
+                                    }
+                                    AppMenuItem(stringResource(R.string.move), enabled = !vm.busy) {
+                                        selectionMenuOpen = false
+                                        pickTransferTarget(picked.map { it.file.path }, Transfer.MOVE)
+                                    }
+                                    AppMenuItem(stringResource(R.string.copy), enabled = !vm.busy) {
+                                        selectionMenuOpen = false
+                                        pickTransferTarget(picked.map { it.file.path }, Transfer.COPY)
                                     }
                                 }
                             }
@@ -332,23 +387,44 @@ fun MainScreen(
                             action = { Button(onClick = { screen = Screen.ALBUMS }) { Text(stringResource(R.string.albums)) } },
                         )
 
-                        // Keyed by the album, so another one opens scrolled to its top.
-                        else -> key(vm.album) {
-                            ThumbnailsScreen(
-                                sorted = sorted,
-                                datesDone = vm.datesDone,
-                                datesTotal = vm.datesTotal,
-                                order = itemOrder,
-                                columns = gridColumns,
-                                onColumns = { AppSettings.setGridColumns(context, it) },
-                                selected = selection,
-                                onOpen = { viewerPath = it.file.path },
-                                onSelect = { item ->
-                                    val path = item.file.path
-                                    selection = if (path in selection) selection - path else selection + path
-                                },
-                                modifier = Modifier.weight(1f),
-                            )
+                        else -> Box(Modifier.weight(1f)) {
+                            // Keyed by the album, so another one opens scrolled to its top.
+                            key(vm.album) {
+                                ThumbnailsScreen(
+                                    sorted = sorted,
+                                    datesDone = vm.datesDone,
+                                    datesTotal = vm.datesTotal,
+                                    order = itemOrder,
+                                    columns = gridColumns,
+                                    onColumns = { AppSettings.setGridColumns(context, it) },
+                                    selected = selection,
+                                    onOpen = { viewerPath = it.file.path },
+                                    onSelect = { item ->
+                                        val path = item.file.path
+                                        selection = if (path in selection) selection - path else selection + path
+                                    },
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                            // Over the grid, so it keeps its scroll; taking every touch while the files change.
+                            vm.fileJob?.let { job ->
+                                ProgressState(
+                                    text = stringResource(
+                                        when (job) {
+                                            FileJob.MOVE -> R.string.moving
+                                            FileJob.COPY -> R.string.copying
+                                            FileJob.TRASH -> R.string.trashing
+                                        },
+                                        formatCount(vm.fileJobDone),
+                                        formatCount(vm.fileJobTotal),
+                                    ),
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(MaterialTheme.colorScheme.background)
+                                        .pointerInput(Unit) { detectTapGestures { } },
+                                    progress = { if (vm.fileJobTotal > 0) vm.fileJobDone.toFloat() / vm.fileJobTotal else 0f },
+                                )
+                            }
                         }
                     }
                 }
@@ -364,13 +440,11 @@ fun MainScreen(
                             startPath = open,
                             onPage = { viewerPath = it },
                             onShare = { shareFiles(context, listOf(it.file)) },
+                            onTransfer = { item, mode -> pickTransferTarget(listOf(item.file.path), mode) },
                             onDelete = { item ->
                                 // One at a time: a second tap while the first is under way does nothing.
-                                if (!vm.trashBusy) {
-                                    // On to a neighbour first, so the viewer opens on it once
-                                    // the album has been read again without this file.
-                                    val at = sorted.indexOf(item)
-                                    viewerPath = (sorted.getOrNull(at + 1) ?: sorted.getOrNull(at - 1))?.file?.path
+                                if (!vm.busy) {
+                                    stepViewerOffOf(item.file.path)
                                     vm.moveToTrash(listOf(item.file)) { moved -> if (!moved) viewerPath = item.file.path }
                                 }
                             },
@@ -405,6 +479,7 @@ fun MainScreen(
                     trashViewed = it
                 },
                 onShare = null,
+                onTransfer = null,
                 onDelete = null,
                 onClose = { trashViewerPath = null },
             )
@@ -499,11 +574,13 @@ private fun TopBar(content: @Composable RowScope.() -> Unit) {
 /** A step on the whole trash, waiting on its OK. */
 private enum class TrashStep { RESTORE_ALL, EMPTY }
 
-private fun TrashNotice.messageRes(): Int = when (this) {
-    TrashNotice.DELETE_FAILED -> R.string.delete_failed
-    TrashNotice.RESTORE_EXISTS -> R.string.restore_exists
-    TrashNotice.RESTORE_FAILED -> R.string.restore_failed
-    TrashNotice.RESTORE_SOME_LEFT -> R.string.restore_some_left
+private fun FileNotice.messageRes(): Int = when (this) {
+    FileNotice.DELETE_FAILED -> R.string.delete_failed
+    FileNotice.RESTORE_EXISTS -> R.string.restore_exists
+    FileNotice.RESTORE_FAILED -> R.string.restore_failed
+    FileNotice.RESTORE_SOME_LEFT -> R.string.restore_some_left
+    FileNotice.MOVE_FAILED -> R.string.move_failed
+    FileNotice.COPY_FAILED -> R.string.copy_failed
 }
 
 private fun ItemOrder.labelRes(): Int = when (this) {

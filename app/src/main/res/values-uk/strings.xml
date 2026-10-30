@@ -111,4 +111,14 @@
     <string name="share">Поділитися</string>
     <string name="select_all">Вибрати всі</string>
     <string name="selected_count">Вибрано %1$s</string>
+    <string name="move">Перемістити</string>
+    <string name="copy">Копіювати</string>
+    <string name="move_to">Перемістити до</string>
+    <string name="copy_to">Копіювати до</string>
+    <string name="moving">Переміщено %1$s з %2$s</string>
+    <string name="copying">Скопійовано %1$s з %2$s</string>
+    <string name="trashing">У кошик переміщено %1$s з %2$s</string>
+    <string name="move_failed">Не все вдалося перемістити</string>
+    <string name="copy_failed">Не все вдалося скопіювати</string>
+    <string name="new_folder">Нова папка</string>
 </resources>

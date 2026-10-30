@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Move or copy picked files, or the one in the viewer, into a folder chosen in the app's folder list, which can now make a new folder; a taken name gets a number, a RAW goes with its photo, and moving, copying or trashing many files shows progress
 - N: A long tap picks thumbnails, a tap then picks more; the picked files are shared or moved to the trash together, and the viewer's ⋮ shares a single file
 - F: One trash per storage, Documents/PhotoBox/.Trash, instead of one in every folder — what was in the old ones is carried over; the trash screen shows its totals, opens files full screen and counts restoring or emptying it all
 - F: The open album stands out in the album list filled with the accent colour, and the list opens scrolled to it
