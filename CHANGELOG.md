@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Videos play in the app's own player, or in another app with the Video player setting
 - N: A tap on a thumbnail opens the file full screen: swipe to the next one, pinch or double-tap to zoom, tap to hide the bar; a video opens in the phone's player
 - R: Top-bar icon buttons, progress screens and bitmap caches each come from one shared helper
 - I: Release builds include armeabi-v7a for 32-bit phones and TV boxes

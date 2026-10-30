@@ -47,6 +47,10 @@
     <string name="photo_load_failed">Не вдалося завантажити файл</string>
     <string name="play_video">Відтворити відео</string>
     <string name="no_video_player">Немає застосунку для цього відео</string>
+    <string name="setting_video_player">Відеоплеєр</string>
+    <string name="player_built_in">Вбудований</string>
+    <string name="player_external">Зовнішній</string>
+    <string name="video_play_failed">Не вдалося відтворити відео</string>
     <plurals name="file_count">
         <item quantity="one">%1$s файл</item>
         <item quantity="few">%1$s файли</item>

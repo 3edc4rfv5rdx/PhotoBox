@@ -47,6 +47,10 @@
     <string name="photo_load_failed">Could not load this file</string>
     <string name="play_video">Play video</string>
     <string name="no_video_player">No app to play this video</string>
+    <string name="setting_video_player">Video player</string>
+    <string name="player_built_in">Built in</string>
+    <string name="player_external">Another app</string>
+    <string name="video_play_failed">Could not play this video</string>
     <plurals name="file_count">
         <item quantity="one">%1$s file</item>
         <item quantity="other">%1$s files</item>

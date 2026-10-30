@@ -38,6 +38,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -70,8 +71,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
+import xx.photobox.AppSettings
 import xx.photobox.MediaItem
 import xx.photobox.R
+import xx.photobox.VideoPlayer
 import xx.photobox.isVideo
 import java.io.File
 
@@ -104,6 +107,10 @@ fun ViewerScreen(
     // Derived, so the pager hears zoomed or not, not every step of a pinch.
     val zoomed by remember { derivedStateOf { zoom.scale > 1f } }
     var chrome by rememberSaveable { mutableStateOf(true) }
+    val context = LocalContext.current
+    val videoPlayer by AppSettings.videoPlayer.collectAsState()
+    // The video playing in the app's own player, over the viewer.
+    var playing by rememberSaveable { mutableStateOf<String?>(null) }
 
     LaunchedEffect(pagerState.currentPage) { zoom.reset() }
     LaunchedEffect(pagerState.settledPage) {
@@ -124,6 +131,12 @@ fun ViewerScreen(
                 zoom = if (page == pagerState.currentPage) zoom else null,
                 next = sorted.getOrNull(page + 1)?.file?.path,
                 onTap = { chrome = !chrome },
+                onPlay = {
+                    when (videoPlayer) {
+                        VideoPlayer.BUILT_IN -> playing = path
+                        VideoPlayer.EXTERNAL -> playVideo(context, path)
+                    }
+                },
             )
         }
 
@@ -154,6 +167,8 @@ fun ViewerScreen(
                 )
             }
         }
+
+        playing?.let { VideoPlayerScreen(it, onClose = { playing = null }) }
     }
 }
 
@@ -199,10 +214,11 @@ private sealed interface PhotoState {
 /**
  * One file of the viewer. Without a [zoom] it is not the page in front and
  * takes no gestures of its own, so the pager has them all. A video shows its
- * still with a play button over it. [next] is decoded ahead once this one is up.
+ * still with a play button over it, which calls [onPlay]. [next] is decoded
+ * ahead once this one is up.
  */
 @Composable
-private fun PhotoPage(path: String, zoom: PhotoZoom?, next: String?, onTap: () -> Unit) {
+private fun PhotoPage(path: String, zoom: PhotoZoom?, next: String?, onTap: () -> Unit, onPlay: () -> Unit) {
     val video = isVideo(path)
     val state by produceState<PhotoState>(initialValue = PhotoState.Loading, key1 = path) {
         // A video's still is not kept: it is cancelled when paged past, and a
@@ -271,14 +287,11 @@ private fun PhotoPage(path: String, zoom: PhotoZoom?, next: String?, onTap: () -
             // A video with no still can still be played; the button says enough.
             PhotoState.Failed -> if (!video) Text(stringResource(R.string.photo_load_failed), color = Color.White)
         }
-        if (video) {
-            val context = LocalContext.current
-            PlayButton(onClick = { playVideo(context, path) })
-        }
+        if (video) PlayButton(onClick = onPlay)
     }
 }
 
-/** The one control a video gets for now: playing it is another app's job. */
+/** The one control a video gets in the viewer: playing is the player's job. */
 @Composable
 private fun PlayButton(onClick: () -> Unit) {
     IconButton(

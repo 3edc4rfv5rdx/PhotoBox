@@ -47,6 +47,10 @@
     <string name="photo_load_failed">Не удалось загрузить файл</string>
     <string name="play_video">Воспроизвести видео</string>
     <string name="no_video_player">Нет приложения для этого видео</string>
+    <string name="setting_video_player">Плеер видео</string>
+    <string name="player_built_in">Встроенный</string>
+    <string name="player_external">Внешний</string>
+    <string name="video_play_failed">Не удалось воспроизвести видео</string>
     <plurals name="file_count">
         <item quantity="one">%1$s файл</item>
         <item quantity="few">%1$s файла</item>

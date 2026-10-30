@@ -27,7 +27,8 @@ Work in progress, built to `TZ.md`.
 - **Viewer**: a tap on a thumbnail opens it full screen, in the grid's order.
   Swipe to the next or previous file; pinch or double-tap to zoom, and drag
   while zoomed. A tap hides or shows the bar on top. A video shows a still
-  with a play button that opens it in the phone's own player.
+  with a play button: it plays in PhotoBox's own player, or in another app
+  with "Video player" set to that in Settings.
 - **Folder access**: PhotoBox reads files directly and needs "All files access".
 
 ## Install

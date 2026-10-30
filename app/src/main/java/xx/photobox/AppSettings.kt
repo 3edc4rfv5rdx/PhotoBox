@@ -20,6 +20,9 @@ enum class ThemeMode { SYSTEM, LIGHT, DARK }
 /** How many accents the palette offers; the colours themselves are in ui/Common.kt. */
 const val ACCENT_COUNT = 6
 
+/** Where a video plays: in the app's own player, or handed to another app. */
+enum class VideoPlayer { BUILT_IN, EXTERNAL }
+
 /** How many thumbnails across a pinch can set. */
 val GRID_COLUMNS = 2..5
 const val DEFAULT_GRID_COLUMNS = 3
@@ -38,6 +41,7 @@ object AppSettings {
     private const val KEY_ALBUM_PATH = "album_path"
     private const val KEY_GRID_COLUMNS = "grid_columns"
     private const val KEY_ITEM_ORDER = "item_order"
+    private const val KEY_VIDEO_PLAYER = "video_player"
 
     private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
@@ -59,6 +63,9 @@ object AppSettings {
     private val _itemOrder = MutableStateFlow(ItemOrder.DATE)
     val itemOrder: StateFlow<ItemOrder> = _itemOrder.asStateFlow()
 
+    private val _videoPlayer = MutableStateFlow(VideoPlayer.BUILT_IN)
+    val videoPlayer: StateFlow<VideoPlayer> = _videoPlayer.asStateFlow()
+
     fun load(context: Context) {
         val prefs = prefs(context)
         _themeMode.value = enumOr(prefs.getString(KEY_THEME, null), ThemeMode.SYSTEM)
@@ -67,6 +74,7 @@ object AppSettings {
         _albumOrder.value = enumOr(prefs.getString(KEY_ALBUM_ORDER, null), AlbumOrder.NAME)
         _gridColumns.value = prefs.getInt(KEY_GRID_COLUMNS, DEFAULT_GRID_COLUMNS).coerceIn(GRID_COLUMNS)
         _itemOrder.value = enumOr(prefs.getString(KEY_ITEM_ORDER, null), ItemOrder.DATE)
+        _videoPlayer.value = enumOr(prefs.getString(KEY_VIDEO_PLAYER, null), VideoPlayer.BUILT_IN)
     }
 
     fun setThemeMode(context: Context, mode: ThemeMode) {
@@ -99,6 +107,11 @@ object AppSettings {
     fun setItemOrder(context: Context, order: ItemOrder) {
         _itemOrder.value = order
         prefs(context).edit { putString(KEY_ITEM_ORDER, order.name) }
+    }
+
+    fun setVideoPlayer(context: Context, player: VideoPlayer) {
+        _videoPlayer.value = player
+        prefs(context).edit { putString(KEY_VIDEO_PLAYER, player.name) }
     }
 
     /** The album open last, kept across launches. Null before one was ever opened. */

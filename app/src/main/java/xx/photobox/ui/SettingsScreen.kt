@@ -32,14 +32,15 @@ import dev.updater.Updater
 import xx.photobox.AppSettings
 import xx.photobox.R
 import xx.photobox.ThemeMode
+import xx.photobox.VideoPlayer
 import xx.photobox.currentLanguageTag
 import xx.photobox.setLanguageTag
 import xx.photobox.supportedLanguages
 
 /** Which editor is open; only one can be at a time. */
-private enum class Editing { NONE, THEME, ACCENT, LANGUAGE }
+private enum class Editing { NONE, THEME, ACCENT, LANGUAGE, PLAYER }
 
-/** Theme, accent colour, language, the start-up update check and whether hidden albums are listed. */
+/** Theme, accent colour, language, the start-up update check, whether hidden albums are listed and the video player. */
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -47,6 +48,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     val themeMode by AppSettings.themeMode.collectAsState()
     val accentIndex by AppSettings.accentIndex.collectAsState()
     val showHidden by AppSettings.showHidden.collectAsState()
+    val videoPlayer by AppSettings.videoPlayer.collectAsState()
 
     val systemLabel = stringResource(R.string.language_system)
     val languages = remember(context, systemLabel) { supportedLanguages(context, systemLabel) }
@@ -95,6 +97,12 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         }
         HorizontalDivider()
         SwitchRow(stringResource(R.string.setting_show_hidden), showHidden) { AppSettings.setShowHidden(context, it) }
+        HorizontalDivider()
+        SettingRow(
+            label = stringResource(R.string.setting_video_player),
+            value = stringResource(videoPlayer.labelRes()),
+            onClick = { editing = Editing.PLAYER },
+        )
     }
 
     when (editing) {
@@ -139,6 +147,18 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             },
         )
 
+        Editing.PLAYER -> ChoiceDialog(
+            title = stringResource(R.string.setting_video_player),
+            options = VideoPlayer.entries,
+            selected = videoPlayer,
+            label = { stringResource(it.labelRes()) },
+            onDismiss = { editing = Editing.NONE },
+            onPick = {
+                AppSettings.setVideoPlayer(context, it)
+                editing = Editing.NONE
+            },
+        )
+
         Editing.NONE -> Unit
     }
 }
@@ -164,6 +184,11 @@ private fun SettingRow(label: String, value: String, onClick: () -> Unit) {
         Text(label, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
         Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
     }
+}
+
+private fun VideoPlayer.labelRes(): Int = when (this) {
+    VideoPlayer.BUILT_IN -> R.string.player_built_in
+    VideoPlayer.EXTERNAL -> R.string.player_external
 }
 
 private fun ThemeMode.labelRes(): Int = when (this) {
