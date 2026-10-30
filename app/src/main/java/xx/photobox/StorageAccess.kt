@@ -3,8 +3,12 @@ package xx.photobox
 import android.content.Context
 import android.content.Intent
 import android.media.MediaScannerConnection
+import android.net.Uri
 import android.os.Environment
 import android.os.storage.StorageManager
+import android.provider.DocumentsContract
+import android.provider.MediaStore
+import android.provider.OpenableColumns
 import android.provider.Settings
 import androidx.core.net.toUri
 import java.io.File
@@ -63,4 +67,61 @@ fun defaultAlbumParent(): File = Environment.getExternalStoragePublicDirectory(E
  */
 fun announceChanged(context: Context, paths: List<String>) {
     if (paths.isNotEmpty()) MediaScannerConnection.scanFile(context, paths.toTypedArray(), null, null)
+}
+
+private const val EXTERNAL_STORAGE_DOCUMENTS = "com.android.externalstorage.documents"
+
+/**
+ * The file behind [uri] another app handed over, when it can be found and
+ * read: a file URI, the system's own storage documents ("primary:DCIM/x.jpg",
+ * "1A2B-3C4D:DCIM/x.jpg"), the media library's path for its entries, or a
+ * path inside a URI that carries one whole, as many file managers' do. Null
+ * otherwise — the file is then read through [uri] itself.
+ */
+fun fileFromUri(context: Context, uri: Uri): File? {
+    val candidates = sequence {
+        when (uri.scheme) {
+            "file" -> uri.path?.let { yield(File(it)) }
+            "content" -> {
+                if (uri.authority == EXTERNAL_STORAGE_DOCUMENTS && DocumentsContract.isDocumentUri(context, uri)) {
+                    val (volume, path) = DocumentsContract.getDocumentId(uri).split(':', limit = 2).let {
+                        it[0] to it.getOrElse(1) { "" }
+                    }
+                    val root = if (volume == "primary") {
+                        Environment.getExternalStorageDirectory()
+                    } else {
+                        storageRoots(context).firstOrNull { it.dir.name == volume }?.dir
+                    }
+                    root?.let { yield(File(it, path)) }
+                }
+                mediaDataPath(context, uri)?.let { yield(File(it)) }
+                // A provider that puts the whole path in its URI.
+                uri.path?.let { path ->
+                    val at = path.indexOf("/storage/")
+                    if (at >= 0) yield(File(path.substring(at)))
+                }
+            }
+        }
+    }
+    return candidates.firstOrNull { it.isFile && it.canRead() }
+}
+
+/** The path the media library or a provider like it gives for [uri], if any. Deprecated as a column, still filled in. */
+@Suppress("DEPRECATION")
+private fun mediaDataPath(context: Context, uri: Uri): String? = try {
+    context.contentResolver.query(uri, arrayOf(MediaStore.MediaColumns.DATA), null, null, null)?.use { cursor ->
+        if (cursor.moveToFirst()) cursor.getString(0) else null
+    }
+} catch (e: Exception) {
+    // A provider that has no such column, or refuses the query.
+    null
+}
+
+/** The name [uri] goes by, for a copy of a file no path was found for. */
+fun displayNameOf(context: Context, uri: Uri): String? = try {
+    context.contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+        if (cursor.moveToFirst()) cursor.getString(0) else null
+    }
+} catch (e: Exception) {
+    null
 }

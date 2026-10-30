@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Open with PhotoBox: a photo or video from another app shows full screen among the rest of its folder
 - N: Filter the album by part of the name and a range of days, shown in a line under the top bar; the viewer and the slideshow follow it
 - N: Rotate photos 90° clockwise without loss, by their EXIF orientation, from the viewer's ⋮ or the picked files'
 - F: The slideshow stops after the last photo with the app's icon over it instead of going round, and a show seen to the end is not offered to go on

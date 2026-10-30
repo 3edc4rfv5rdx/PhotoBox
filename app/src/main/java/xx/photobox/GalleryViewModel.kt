@@ -8,9 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
@@ -25,9 +23,6 @@ internal fun sameItems(old: List<MediaItem>?, new: List<MediaItem>): Boolean {
     val byPath = old.associateBy { it.file.path }
     return new.all { item -> byPath[item.file.path]?.let { it.taken == item.taken && it.size == item.size } == true }
 }
-
-/** EXIF reads run a few at a time: enough to overlap the waits on storage, not so many they fight over it. */
-private val dateReader = Dispatchers.IO.limitedParallelism(4)
 
 private const val PROGRESS_TICK_MS = 100L
 
@@ -65,7 +60,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     var datesTotal by mutableIntStateOf(0)
         private set
 
-    private val dateCache = DateCache(File(application.filesDir, "dates.tsv"))
+    private val dateCache = dateCache(application)
     private var itemsJob: Job? = null
     /** The album [items] belong to, so a reload of the same one keeps them on screen while it runs. */
     private var itemsAlbum: File? = null
@@ -161,21 +156,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         if (dir != itemsAlbum) items = null
         itemsAlbum = dir
         itemsJob = viewModelScope.launch {
-            val files = withContext(Dispatchers.IO) {
-                dir.listFiles().orEmpty().filter { it.isFile && isMedia(it) }
-            }
-            val known = ArrayList<MediaItem>(files.size)
-            val unknown = ArrayList<Triple<File, Long, Long>>()
-            withContext(Dispatchers.IO) {
-                for (file in files) {
-                    val modified = file.lastModified()
-                    val size = file.length()
-                    val taken = dateCache.get(file, modified, size)
-                    if (taken != null) known += MediaItem(file, taken, size) else unknown += Triple(file, modified, size)
-                }
-            }
             datesDone = 0
-            datesTotal = unknown.size
             val done = AtomicInteger(0)
             // Counted on the reading threads, shown from this one: Compose
             // state is not written from a pool of threads at once.
@@ -185,23 +166,12 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
                     delay(PROGRESS_TICK_MS)
                 }
             }
-            val read = withContext(dateReader) {
-                unknown.map { (file, modified, size) ->
-                    async {
-                        val taken = takenAt(file)
-                        dateCache.put(file, modified, size, taken)
-                        done.incrementAndGet()
-                        MediaItem(file, taken, size)
-                    }
-                }.awaitAll()
-            }
+            val loaded = readItems(dir, dateCache, done) { datesTotal = it }
             ticker.cancel()
-            val loaded = known + read
             // The same files as before keep the same list, so nothing built
             // on it — the sorted grid, the open viewer — starts over for nothing.
             if (!sameItems(items, loaded)) items = loaded
             datesTotal = 0
-            if (read.isNotEmpty()) withContext(Dispatchers.IO) { dateCache.save() }
         }
     }
 

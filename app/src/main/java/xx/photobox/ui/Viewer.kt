@@ -1,8 +1,10 @@
 package xx.photobox.ui
 
 import android.content.ActivityNotFoundException
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.os.CancellationSignal
 import android.widget.Toast
@@ -75,6 +77,7 @@ import xx.photobox.AppSettings
 import xx.photobox.MediaItem
 import xx.photobox.R
 import xx.photobox.Transfer
+import xx.photobox.ViewActivity
 import xx.photobox.canRotate
 import xx.photobox.VideoPlayer
 import xx.photobox.isVideo
@@ -400,14 +403,32 @@ private fun PlayButton(onClick: () -> Unit) {
     }
 }
 
-/** Hands the video at [path] to whichever player the user has. */
+/**
+ * Hands the video at [path] to whichever player the user has. PhotoBox opens
+ * videos too, and picked here it would only show this one again: so the
+ * phone's default player gets it straight, and without one the others are
+ * offered, PhotoBox left out.
+ */
 private fun playVideo(context: Context, path: String) {
     val file = File(path)
     val intent = Intent(Intent.ACTION_VIEW)
         .setDataAndType(contentUri(context, file), mimeTypeOf(file, "video/*"))
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    val pm = context.packageManager
+    val players = pm.queryIntentActivities(intent, 0).map { it.activityInfo.packageName }.filter { it != context.packageName }
+    val default = pm.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY)?.activityInfo?.packageName
+    val start = if (default in players) {
+        intent
+    } else {
+        Intent.createChooser(intent, null)
+            .putExtra(Intent.EXTRA_EXCLUDE_COMPONENTS, arrayOf(ComponentName(context, ViewActivity::class.java)))
+    }
     try {
-        context.startActivity(intent)
+        if (players.isEmpty()) {
+            Toast.makeText(context, R.string.no_video_player, Toast.LENGTH_SHORT).show()
+        } else {
+            context.startActivity(start)
+        }
     } catch (e: ActivityNotFoundException) {
         Toast.makeText(context, R.string.no_video_player, Toast.LENGTH_SHORT).show()
     }

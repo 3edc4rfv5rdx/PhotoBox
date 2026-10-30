@@ -92,6 +92,12 @@ Work in progress, built to `TZ.md`.
   Go on. Started again in the album the last slideshow ran in, it asks
   whether to go on from the photo it stopped on or begin from the start —
   unless it was seen to the end.
+- **Open with**: PhotoBox is offered for opening a photo or video from
+  another app — a file manager, a messenger. It shows the file full screen
+  among the rest of its folder, in the gallery's order, with its info and
+  Share in ⋮; Back returns to that app. A file that cannot be found on
+  storage is copied in and shown alone. As the video player of choice, the
+  phone's own players are used, never PhotoBox itself.
 - **Folder access**: PhotoBox reads files directly and needs "All files access".
 
 ## Install
