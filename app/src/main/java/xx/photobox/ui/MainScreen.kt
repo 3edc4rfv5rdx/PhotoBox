@@ -335,7 +335,8 @@ fun MainScreen(
                         LargeIconButton(Icons.Filled.Close, stringResource(R.string.exit), onExit)
                         // The quick way to another album.
                         Text(
-                            text = vm.album?.name ?: stringResource(R.string.app_name),
+                            // In brackets, so it reads as the folder's name, not a title.
+                            text = vm.album?.let { "[ ${it.name} ]" } ?: stringResource(R.string.app_name),
                             style = MaterialTheme.typography.titleLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
