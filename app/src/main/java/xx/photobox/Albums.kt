@@ -21,7 +21,7 @@ class Album(
 
 enum class AlbumOrder { NAME, DATE, COUNT }
 
-/** Walks storage volumes for [Album]s. */
+/** Walks the folders albums are looked for in — the search roots, or whole storage volumes — for [Album]s. */
 object AlbumScanner {
 
     /** Every album under [roots], in no particular order. [checkCancel] throws to stop the walk. */
@@ -38,6 +38,7 @@ object AlbumScanner {
         val hidden = hiddenAbove || (dir != root && dir.name.startsWith(".")) ||
             children.any { it.name.equals(NOMEDIA_NAME, ignoreCase = true) }
         var count = 0
+        var music = false
         var cover: File? = null
         var coverModified = Long.MIN_VALUE
         for (child in children) {
@@ -46,6 +47,8 @@ object AlbumScanner {
                 // album; a link could lead back up the tree and never end.
                 if (child.name == TRASH_DIR_NAME || Files.isSymbolicLink(child.toPath())) continue
                 walk(child, root, hidden, checkCancel, found)
+            } else if (isAudio(child)) {
+                music = true
             } else if (isMedia(child)) {
                 count++
                 val modified = child.lastModified()
@@ -55,8 +58,20 @@ object AlbumScanner {
                 }
             }
         }
-        if (cover != null) found += Album(dir, root, count, cover, coverModified, hidden)
+        // A music album's pictures are its covers, not photos anyone is after;
+        // the folders below it are still looked through.
+        if (cover != null && !music) found += Album(dir, root, count, cover, coverModified, hidden)
     }
+}
+
+/**
+ * [paths] as search roots: each once, in the order given, and none that lies
+ * inside another — its albums are found under that one already, and would
+ * otherwise be listed twice.
+ */
+fun normalizeRoots(paths: List<String>): List<String> {
+    val clean = paths.map { it.trimEnd('/') }.filter { it.isNotEmpty() }.distinct()
+    return clean.filter { path -> clean.none { other -> other != path && path.startsWith("$other/") } }
 }
 
 /**

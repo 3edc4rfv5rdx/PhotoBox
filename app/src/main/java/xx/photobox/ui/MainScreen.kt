@@ -42,7 +42,7 @@ import xx.photobox.isVideo
 import xx.photobox.sortItems
 
 /** The screens besides the album's thumbnails, each opened from the ⋮ menu or the title. */
-private enum class Screen { THUMBNAILS, ALBUMS, NEW_ALBUM_PARENT, TRASH, SETTINGS }
+private enum class Screen { THUMBNAILS, ALBUMS, NEW_ALBUM_PARENT, ADD_ROOT, TRASH, SETTINGS }
 
 /**
  * The whole app: the open album's thumbnails, with ✕ to leave on the left, the
@@ -71,6 +71,8 @@ fun MainScreen(
     }
     var menuOpen by remember { mutableStateOf(false) }
     var choosingOrder by remember { mutableStateOf(false) }
+    var addMenuOpen by remember { mutableStateOf(false) }
+    val roots by AppSettings.roots.collectAsState()
     var choosingItemOrder by remember { mutableStateOf(false) }
     // The file open full screen, by path: the list under it can be reloaded
     // and shift every index, but the file stays the one it was.
@@ -97,11 +99,24 @@ fun MainScreen(
                 onBack = backToThumbnails,
                 actions = {
                     LargeIconButton(Icons.AutoMirrored.Filled.Sort, stringResource(R.string.sort), { choosingOrder = true })
-                    LargeIconButton(Icons.Filled.Add, stringResource(R.string.new_album), vm::startDraft)
+                    Box {
+                        LargeIconButton(Icons.Filled.Add, stringResource(R.string.add), { addMenuOpen = true })
+                        AppMenu(expanded = addMenuOpen, onDismissRequest = { addMenuOpen = false }) {
+                            AppMenuItem(stringResource(R.string.new_album)) {
+                                addMenuOpen = false
+                                vm.startDraft()
+                            }
+                            AppMenuItem(stringResource(R.string.add_root)) {
+                                addMenuOpen = false
+                                screen = Screen.ADD_ROOT
+                            }
+                        }
+                    }
                 },
             ) {
                 AlbumsScreen(
                     albums = vm.albums,
+                    roots = vm.scannedRoots,
                     scanning = vm.scanning,
                     order = albumOrder,
                     showHidden = showHidden,
@@ -109,6 +124,30 @@ fun MainScreen(
                     onOpen = {
                         vm.openAlbum(it)
                         screen = Screen.THUMBNAILS
+                    },
+                    // Whole volumes, searched for want of roots, are not the user's to remove.
+                    onRemoveRoot = if (roots.isEmpty()) {
+                        null
+                    } else {
+                        { root ->
+                            AppSettings.removeRoot(context, root.path)
+                            vm.scanAlbums(restart = true)
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            Screen.ADD_ROOT -> AppScreen(
+                title = stringResource(R.string.add_root),
+                onBack = { screen = Screen.ALBUMS },
+            ) {
+                FolderPickerScreen(
+                    start = null,
+                    onPick = {
+                        AppSettings.addRoot(context, it.path)
+                        vm.scanAlbums(restart = true)
+                        screen = Screen.ALBUMS
                     },
                     modifier = Modifier.weight(1f),
                 )

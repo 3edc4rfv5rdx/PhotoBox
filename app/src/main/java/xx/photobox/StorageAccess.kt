@@ -44,5 +44,9 @@ fun pathOnVolume(dir: File, volume: File): String {
 fun cameraAlbum(): File? =
     File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM), "Camera").takeIf { it.isDirectory }
 
-/** Where a new album goes unless another folder is picked. */
+/** The search roots before any are chosen: where the camera and most apps put pictures. */
+fun defaultRoots(): List<String> = listOf(Environment.DIRECTORY_DCIM, Environment.DIRECTORY_PICTURES)
+    .map { Environment.getExternalStoragePublicDirectory(it).path }
+
+/** Where a new album goes unless another folder is picked, when there is no search root to put it in. */
 fun defaultAlbumParent(): File = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)

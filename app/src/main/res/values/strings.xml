@@ -23,7 +23,6 @@
     <string name="theme_dark">Dark</string>
     <string name="language_system">System</string>
     <string name="albums_scanning">Looking for albums</string>
-    <string name="albums_none">No photos or videos found</string>
     <string name="no_album_open">No album open</string>
     <string name="new_album">New album</string>
     <string name="album_name">Name</string>
@@ -77,6 +76,11 @@
     <string name="close">Close</string>
     <string name="unit_seconds">%1$s s</string>
     <string name="unit_millimetres">%1$s mm</string>
+    <string name="add">Add</string>
+    <string name="add_root">Add search folder</string>
+    <string name="root_remove">Remove from search</string>
+    <string name="root_empty">No albums here</string>
+    <string name="root_missing">Folder not found</string>
     <plurals name="file_count">
         <item quantity="one">%1$s file</item>
         <item quantity="other">%1$s files</item>

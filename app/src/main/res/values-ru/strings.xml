@@ -23,7 +23,6 @@
     <string name="theme_dark">Тёмная</string>
     <string name="language_system">Системный</string>
     <string name="albums_scanning">Поиск альбомов</string>
-    <string name="albums_none">Фото и видео не найдены</string>
     <string name="no_album_open">Альбом не открыт</string>
     <string name="new_album">Новый альбом</string>
     <string name="album_name">Имя</string>
@@ -77,6 +76,11 @@
     <string name="close">Закрыть</string>
     <string name="unit_seconds">%1$s с</string>
     <string name="unit_millimetres">%1$s мм</string>
+    <string name="add">Добавить</string>
+    <string name="add_root">Добавить папку поиска</string>
+    <string name="root_remove">Убрать из поиска</string>
+    <string name="root_empty">Альбомов нет</string>
+    <string name="root_missing">Папка не найдена</string>
     <plurals name="file_count">
         <item quantity="one">%1$s файл</item>
         <item quantity="few">%1$s файла</item>

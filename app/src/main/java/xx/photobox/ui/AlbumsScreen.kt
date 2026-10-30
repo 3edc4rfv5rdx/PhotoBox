@@ -1,7 +1,9 @@
 package xx.photobox.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,11 +21,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import xx.photobox.Album
@@ -39,37 +45,98 @@ import java.io.File
 private val ALBUM_COVER = 72.dp
 
 /**
- * Every album, in [order], hidden ones only with [showHidden]. [albums] null
+ * Every album, one section per folder of [roots] it was found under, each
+ * section in [order], hidden albums only with [showHidden]. [albums] null
  * means the first scan has not ended; a later scan runs under the old list,
- * with a thin bar on top while it does.
+ * with a thin bar on top while it does. With [onRemoveRoot] a section's
+ * heading can take its folder out of the search; without it the sections are
+ * whole volumes, nothing to remove.
  */
 @Composable
 fun AlbumsScreen(
     albums: List<Album>?,
+    roots: List<File>,
     scanning: Boolean,
     order: AlbumOrder,
     showHidden: Boolean,
     current: File?,
     onOpen: (File) -> Unit,
+    onRemoveRoot: ((File) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    val shown = remember(albums, order, showHidden) {
-        albums?.let { all -> sortAlbums(if (showHidden) all else all.filterNot { it.hidden }, order) }
+    val sections = remember(albums, roots, order, showHidden) {
+        albums?.let { all ->
+            val visible = if (showHidden) all else all.filterNot { it.hidden }
+            val byRoot = visible.groupBy { it.root }
+            roots.map { root -> root to sortAlbums(byRoot[root].orEmpty(), order) }
+        }
     }
     Column(modifier.fillMaxSize()) {
         when {
-            shown == null -> ProgressState(stringResource(R.string.albums_scanning))
+            sections == null -> ProgressState(stringResource(R.string.albums_scanning))
 
             else -> {
                 if (scanning) LinearProgressIndicator(Modifier.fillMaxWidth())
-                if (shown.isEmpty() && !scanning) {
-                    EmptyState(icon = null, title = stringResource(R.string.albums_none))
-                } else {
-                    LazyColumn(Modifier.weight(1f)) {
-                        items(shown, key = { it.dir.path }) { album ->
+                LazyColumn(Modifier.weight(1f)) {
+                    for ((root, rootAlbums) in sections) {
+                        item(key = "root:${root.path}") {
+                            RootHeading(root, onRemove = onRemoveRoot?.let { remove -> { remove(root) } })
+                        }
+                        if (rootAlbums.isEmpty() && !scanning) {
+                            item(key = "empty:${root.path}") {
+                                Text(
+                                    stringResource(if (root.isDirectory) R.string.root_empty else R.string.root_missing),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                                )
+                            }
+                        }
+                        items(rootAlbums, key = { it.dir.path }) { album ->
                             AlbumRow(album, selected = album.dir == current) { onOpen(album.dir) }
                             HorizontalDivider()
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** A section's heading: the folder's name and where it is, and its ⋮ to take it out of the search. */
+@Composable
+private fun RootHeading(root: File, onRemove: (() -> Unit)?) {
+    var menuOpen by remember { mutableStateOf(false) }
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+            .padding(start = 16.dp, top = 4.dp, bottom = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f).padding(vertical = 8.dp)) {
+            Text(
+                root.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                root.path,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (onRemove != null) {
+            Box {
+                MoreButton(onClick = { menuOpen = true })
+                AppMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    AppMenuItem(stringResource(R.string.root_remove)) {
+                        menuOpen = false
+                        onRemove()
                     }
                 }
             }

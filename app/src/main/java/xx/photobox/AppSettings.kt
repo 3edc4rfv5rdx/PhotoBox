@@ -51,6 +51,7 @@ object AppSettings {
     private const val KEY_SHOW_HIDDEN = "show_hidden"
     private const val KEY_ALBUM_ORDER = "album_order"
     private const val KEY_ALBUM_PATH = "album_path"
+    private const val KEY_ROOTS = "roots"
     private const val KEY_SLIDESHOW_ALBUM = "slideshow_album"
     private const val KEY_SLIDESHOW_PHOTO = "slideshow_photo"
     private const val KEY_GRID_COLUMNS = "grid_columns"
@@ -71,6 +72,13 @@ object AppSettings {
     /** Whether albums under a dot-folder or a .nomedia file are listed. */
     private val _showHidden = MutableStateFlow(false)
     val showHidden: StateFlow<Boolean> = _showHidden.asStateFlow()
+
+    /**
+     * The folders albums are looked for in, by path, in the order they were
+     * added. Empty means every storage volume whole.
+     */
+    private val _roots = MutableStateFlow<List<String>>(emptyList())
+    val roots: StateFlow<List<String>> = _roots.asStateFlow()
 
     private val _albumOrder = MutableStateFlow(AlbumOrder.NAME)
     val albumOrder: StateFlow<AlbumOrder> = _albumOrder.asStateFlow()
@@ -99,6 +107,9 @@ object AppSettings {
         _accentIndex.value = prefs.getInt(KEY_ACCENT, 0).coerceIn(0, ACCENT_COUNT - 1)
         _showHidden.value = prefs.getBoolean(KEY_SHOW_HIDDEN, false)
         _albumOrder.value = enumOr(prefs.getString(KEY_ALBUM_ORDER, null), AlbumOrder.NAME)
+        // Absent, not empty: the camera's and the pictures' folders until the
+        // user has had a say, and someone who removes every root searches everything.
+        _roots.value = prefs.getString(KEY_ROOTS, null)?.split('\n')?.let(::normalizeRoots) ?: defaultRoots()
         _gridColumns.value = prefs.getInt(KEY_GRID_COLUMNS, DEFAULT_GRID_COLUMNS).coerceIn(GRID_COLUMNS)
         _itemOrder.value = enumOr(prefs.getString(KEY_ITEM_ORDER, null), ItemOrder.DATE)
         _videoPlayer.value = enumOr(prefs.getString(KEY_VIDEO_PLAYER, null), VideoPlayer.BUILT_IN)
@@ -160,6 +171,16 @@ object AppSettings {
             putString(KEY_MEDIA_ROTATION, rotation.name)
             remove(KEY_SENSOR_ROTATION_OLD)
         }
+    }
+
+    fun addRoot(context: Context, path: String) = setRoots(context, _roots.value + path)
+
+    fun removeRoot(context: Context, path: String) = setRoots(context, _roots.value - path)
+
+    private fun setRoots(context: Context, paths: List<String>) {
+        val clean = normalizeRoots(paths)
+        _roots.value = clean
+        prefs(context).edit { putString(KEY_ROOTS, clean.joinToString("\n")) }
     }
 
     /** The album open last, kept across launches. Null before one was ever opened. */

@@ -103,4 +103,33 @@ class AlbumsTest {
         assertEquals(AlbumNameCheck.EXISTS, checkAlbumName(tmp.root, " Taken "))
         assertEquals(AlbumNameCheck.OK, checkAlbumName(tmp.root, "Trips"))
     }
+
+    @Test
+    fun aFolderWithMusicIsNoAlbumButItsSubfoldersStillAre() {
+        file("Music/Band/cover.jpg")
+        file("Music/Band/01.mp3")
+        file("Music/Band/Scans/booklet.jpg")
+        assertEquals(setOf("Music/Band/Scans"), scan().keys)
+    }
+
+    @Test
+    fun albumsBelongToTheRootTheyWereFoundUnder() {
+        file("DCIM/Camera/a.jpg")
+        file("Pictures/b.jpg")
+        val roots = listOf(File(tmp.root, "DCIM"), File(tmp.root, "Pictures"))
+        val byDir = AlbumScanner.scan(roots) {}.associate { it.dir.name to it.root.name }
+        assertEquals(mapOf("Camera" to "DCIM", "Pictures" to "Pictures"), byDir)
+    }
+
+    @Test
+    fun rootsInsideAnotherRootAreDropped() {
+        assertEquals(
+            listOf("/s/DCIM", "/s/Pictures"),
+            normalizeRoots(listOf("/s/DCIM", "/s/DCIM/Camera", "/s/Pictures/", "/s/DCIM", "")),
+        )
+        // A sibling that only shares the start of the name is not inside.
+        assertEquals(listOf("/s/Pic", "/s/Pictures"), normalizeRoots(listOf("/s/Pic", "/s/Pictures")))
+        // A parent added after its child takes its place.
+        assertEquals(listOf("/s"), normalizeRoots(listOf("/s/DCIM", "/s")))
+    }
 }

@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Albums are looked for in search folders — DCIM and Pictures to start with — listed as sections that + adds to and ⋮ takes out; a folder with music in it is no album
 - N: Info on a file — name, folder, size, picture size, dates, camera and its settings, place on a map — from the viewer's ⋮ menu and the slideshow's controls
 - N: The slideshow has controls shown by a tap — back at the top, and previous, info, pause and next in one block at the bottom — and can go on from the photo the last slideshow stopped on, when it was in the same album
 - F: The slideshow's time per photo is a slider from 1 to 30 seconds

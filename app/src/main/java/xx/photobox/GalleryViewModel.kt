@@ -50,6 +50,10 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     var scanning by mutableStateOf(false)
         private set
 
+    /** The folders the last scan went through — the search roots, or the volumes when there are none — for the list's sections. */
+    var scannedRoots by mutableStateOf<List<File>>(emptyList())
+        private set
+
     /** The open album's files, unsorted; null while they are being read. */
     var items by mutableStateOf<List<MediaItem>?>(null)
         private set
@@ -163,25 +167,36 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /**
-     * Looks for albums again. The last list stays on screen meanwhile, so
-     * coming back to the album list shows it at once and only then updates.
+     * Looks for albums again, in the search roots or, without any, on every
+     * volume. The last list stays on screen meanwhile, so coming back to the
+     * album list shows it at once and only then updates. A scan under way is
+     * left to finish, unless [restart] — the roots changed under it.
      */
-    fun scanAlbums() {
-        if (scanJob?.isActive == true || !hasStorageAccess) return
+    fun scanAlbums(restart: Boolean = false) {
+        if (!hasStorageAccess) return
+        if (scanJob?.isActive == true) {
+            if (!restart) return
+            scanJob?.cancel()
+        }
         scanning = true
         scanJob = viewModelScope.launch {
             try {
-                val roots = storageRoots(getApplication()).map { it.dir }
+                val roots = AppSettings.roots.value.map(::File)
+                    .ifEmpty { storageRoots(getApplication()).map { it.dir } }
                 albums = withContext(Dispatchers.IO) { AlbumScanner.scan(roots) { ensureActive() } }
+                scannedRoots = roots
             } finally {
-                scanning = false
+                // A cancelled scan leaves the flag to the one that replaced it.
+                if (scanJob == coroutineContext[Job]) scanning = false
             }
         }
     }
 
     fun startDraft() {
         createFailed = false
-        draft = AlbumDraft("", defaultAlbumParent())
+        // Into the first search root, so the new album is found where it is made.
+        val parent = AppSettings.roots.value.firstOrNull()?.let(::File)?.takeIf { it.isDirectory } ?: defaultAlbumParent()
+        draft = AlbumDraft("", parent)
     }
 
     fun editDraft(name: String) {
