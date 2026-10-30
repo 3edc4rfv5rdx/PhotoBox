@@ -49,7 +49,7 @@ fun checkRename(file: File, base: String): NameCheck {
     }
 }
 
-private fun isSameFile(a: File, b: File): Boolean = try {
+internal fun isSameFile(a: File, b: File): Boolean = try {
     Files.isSameFile(a.toPath(), b.toPath())
 } catch (e: IOException) {
     false

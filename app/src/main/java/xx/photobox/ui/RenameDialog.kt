@@ -11,19 +11,24 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.stringResource
 import xx.photobox.NameCheck
 import xx.photobox.R
-import xx.photobox.checkRename
-import java.io.File
 
 /**
- * A new name for [file], typed without its extension, which stays. Rename
- * stays off until the name would work; [onRename] is handed the name and
- * what to do should the rename fail.
+ * A new name in place of [current] — a file's without its extension, which
+ * stays as [suffix], or an album's. Rename stays off until [check] says the
+ * name would work; [onRename] is handed the name and what to do should the
+ * rename fail.
  */
 @Composable
-fun RenameDialog(file: File, onRename: (String, onFailed: () -> Unit) -> Unit, onDismiss: () -> Unit) {
-    var name by rememberSaveable(file.path) { mutableStateOf(file.nameWithoutExtension) }
+fun RenameDialog(
+    current: String,
+    suffix: String?,
+    check: (String) -> NameCheck,
+    onRename: (String, onFailed: () -> Unit) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by rememberSaveable(current) { mutableStateOf(current) }
     var failed by remember { mutableStateOf(false) }
-    val check = checkRename(file, name)
+    val nameCheck = check(name)
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.rename)) },
@@ -34,13 +39,13 @@ fun RenameDialog(file: File, onRename: (String, onFailed: () -> Unit) -> Unit, o
                     name = it
                     failed = false
                 },
-                check = check,
+                check = nameCheck,
                 failure = if (failed) stringResource(R.string.rename_failed) else null,
-                suffix = file.extension.takeIf { it.isNotEmpty() }?.let { ".$it" },
+                suffix = suffix,
             )
         },
         confirmButton = {
-            DialogConfirmButton(stringResource(R.string.rename), enabled = check == NameCheck.OK) {
+            DialogConfirmButton(stringResource(R.string.rename), enabled = nameCheck == NameCheck.OK) {
                 onRename(name) { failed = true }
             }
         },

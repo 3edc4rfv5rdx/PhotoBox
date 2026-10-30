@@ -57,8 +57,8 @@ private val ALBUM_COVER = 72.dp
  * with a thin bar on top while it does. A section's heading makes a new
  * album in its folder through [onNewAlbum]; with [onRemoveRoot] it can also
  * take its folder out of the search, without it the sections are whole
- * volumes, nothing to remove. An empty album's ⋮ deletes its folder through
- * [onDeleteEmpty].
+ * volumes, nothing to remove. An album's ⋮ renames it through [onRename],
+ * and an empty one's deletes its folder through [onDeleteEmpty].
  */
 @Composable
 fun AlbumsScreen(
@@ -70,6 +70,7 @@ fun AlbumsScreen(
     current: File?,
     onOpen: (File) -> Unit,
     onNewAlbum: (File) -> Unit,
+    onRename: (File) -> Unit,
     onDeleteEmpty: (File) -> Unit,
     onRemoveRoot: ((File) -> Unit)?,
     modifier: Modifier = Modifier,
@@ -122,6 +123,7 @@ fun AlbumsScreen(
                             AlbumRow(
                                 album,
                                 selected = album.dir == current,
+                                onRename = { onRename(album.dir) },
                                 onDelete = if (album.count == 0) {
                                     { onDeleteEmpty(album.dir) }
                                 } else {
@@ -204,7 +206,7 @@ private fun RootHeading(root: File, onNewAlbum: () -> Unit, onRemove: (() -> Uni
 }
 
 @Composable
-private fun AlbumRow(album: Album, selected: Boolean, onDelete: (() -> Unit)?, onClick: () -> Unit) {
+private fun AlbumRow(album: Album, selected: Boolean, onRename: () -> Unit, onDelete: (() -> Unit)?, onClick: () -> Unit) {
     // The open album the other way round, filled with the accent, so it is
     // found at a glance in a long list.
     val scheme = MaterialTheme.colorScheme
@@ -254,11 +256,15 @@ private fun AlbumRow(album: Album, selected: Boolean, onDelete: (() -> Unit)?, o
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        if (onDelete != null) {
-            var menuOpen by remember { mutableStateOf(false) }
-            Box {
-                MoreButton(onClick = { menuOpen = true }, tint = if (selected) content else null)
-                AppMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+        var menuOpen by remember { mutableStateOf(false) }
+        Box {
+            MoreButton(onClick = { menuOpen = true }, tint = if (selected) content else null)
+            AppMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                AppMenuItem(stringResource(R.string.rename)) {
+                    menuOpen = false
+                    onRename()
+                }
+                if (onDelete != null) {
                     AppMenuItem(stringResource(R.string.delete_album), danger = true) {
                         menuOpen = false
                         onDelete()

@@ -116,6 +116,16 @@ class AlbumsTest {
     }
 
     @Test
+    fun albumRenameCheck() {
+        val album = File(tmp.root, "Trips").apply { mkdirs() }
+        File(tmp.root, "Taken").mkdirs()
+        assertEquals(NameCheck.UNCHANGED, checkAlbumRename(album, " Trips "))
+        assertEquals(NameCheck.EXISTS, checkAlbumRename(album, "Taken"))
+        assertEquals(NameCheck.INVALID, checkAlbumRename(album, "a/b"))
+        assertEquals(NameCheck.OK, checkAlbumRename(album, "Summer"))
+    }
+
+    @Test
     fun aFolderWithMusicIsNoAlbumButItsSubfoldersStillAre() {
         file("Music/Band/cover.jpg")
         file("Music/Band/01.mp3")

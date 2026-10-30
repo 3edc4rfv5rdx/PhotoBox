@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Rename an album from its ⋮ in the album list; the open album and the slideshow's place follow it
 - N: Rename a file from the viewer's ⋮ or the picked one's, its RAW along with it, the extension kept
 - F: An empty album's ⋮ in the album list deletes its folder
 - F: An empty folder shows in the album list as an empty album with the app's icon for a cover, and each search folder's ⋮ makes a new album in it

@@ -108,3 +108,16 @@ fun checkAlbumName(parent: File, name: String): NameCheck {
         else -> NameCheck.OK
     }
 }
+
+/**
+ * Whether the album [dir] can be renamed to [name]. As [checkAlbumName] in
+ * its own folder, except that a target which is the very folder renamed — a
+ * change of case on storage that ignores case — is no clash.
+ */
+fun checkAlbumRename(dir: File, name: String): NameCheck {
+    val parent = dir.parentFile ?: return NameCheck.INVALID
+    val trimmed = name.trim()
+    if (trimmed == dir.name) return NameCheck.UNCHANGED
+    val check = checkAlbumName(parent, trimmed)
+    return if (check == NameCheck.EXISTS && isSameFile(dir, File(parent, trimmed))) NameCheck.OK else check
+}

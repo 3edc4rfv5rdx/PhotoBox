@@ -295,6 +295,33 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /**
+     * Renames the album [dir] to [name] and reads the albums again. The open
+     * album and the slideshow's last photo follow it to its new name. [onDone]
+     * hears its new place, or null when it could not be renamed.
+     */
+    fun renameAlbum(dir: File, name: String, onDone: (File?) -> Unit) {
+        if (busy) return
+        val renamed = File(dir.parentFile, name.trim())
+        viewModelScope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                val before = dir.listFiles().orEmpty().map { it.path }
+                dir.renameTo(renamed).also { ok ->
+                    if (ok) announceChanged(getApplication(), before + renamed.listFiles().orEmpty().map { it.path })
+                }
+            }
+            if (ok) {
+                val app = getApplication<Application>()
+                AppSettings.slideshowFrame(app, dir)?.let { photo ->
+                    AppSettings.setSlideshowFrame(app, renamed, File(renamed, File(photo).name).path)
+                }
+                if (album == dir) openAlbum(renamed)
+                scanAlbums(restart = true)
+            }
+            onDone(renamed.takeIf { ok })
+        }
+    }
+
     // ---------- Trash ----------
 
     /** The trash of every volume, whether it exists yet or not. */

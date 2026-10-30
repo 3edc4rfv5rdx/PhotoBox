@@ -52,6 +52,8 @@ import xx.photobox.Transfer
 import xx.photobox.FileJob
 import xx.photobox.FileNotice
 import xx.photobox.isVideo
+import xx.photobox.checkAlbumRename
+import xx.photobox.checkRename
 import xx.photobox.sortItems
 import java.io.File
 
@@ -108,8 +110,9 @@ fun MainScreen(
     // The files on their way to another folder while it is picked, by path, and whether moved or copied.
     var transferPaths by rememberSaveable { mutableStateOf(emptyList<String>()) }
     var transferMode by rememberSaveable { mutableStateOf(Transfer.MOVE) }
-    // The file whose new name is being typed.
+    // The file, or the album, whose new name is being typed.
     var renamingPath by rememberSaveable { mutableStateOf<String?>(null) }
+    var renamingAlbum by rememberSaveable { mutableStateOf<String?>(null) }
     val pickTransferTarget = { paths: List<String>, mode: Transfer ->
         transferPaths = paths
         transferMode = mode
@@ -183,6 +186,7 @@ fun MainScreen(
                     },
                     // Whole volumes, searched for want of roots, are not the user's to remove.
                     onNewAlbum = vm::startDraft,
+                    onRename = { renamingAlbum = it.path },
                     onDeleteEmpty = vm::deleteEmptyAlbum,
                     onRemoveRoot = if (roots.isEmpty()) {
                         null
@@ -513,8 +517,11 @@ fun MainScreen(
     }
 
     renamingPath?.takeIf { screen == Screen.THUMBNAILS }?.let { path ->
+        val file = File(path)
         RenameDialog(
-            file = File(path),
+            current = file.nameWithoutExtension,
+            suffix = file.extension.takeIf { it.isNotEmpty() }?.let { ".$it" },
+            check = { checkRename(file, it) },
             onRename = { base, onFailed ->
                 vm.rename(File(path), base) { renamed ->
                     if (renamed == null) {
@@ -528,6 +535,19 @@ fun MainScreen(
                 }
             },
             onDismiss = { renamingPath = null },
+        )
+    }
+
+    renamingAlbum?.takeIf { screen == Screen.ALBUMS }?.let { path ->
+        val dir = File(path)
+        RenameDialog(
+            current = dir.name,
+            suffix = null,
+            check = { checkAlbumRename(dir, it) },
+            onRename = { name, onFailed ->
+                vm.renameAlbum(dir, name) { renamed -> if (renamed == null) onFailed() else renamingAlbum = null }
+            },
+            onDismiss = { renamingAlbum = null },
         )
     }
 
