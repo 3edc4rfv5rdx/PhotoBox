@@ -100,14 +100,14 @@ android {
         }
     }
 
-    // arm64-v8a for the phone, x86_64 for the emulator, universal for anything
-    // else. 19-LinkOut.sh links the ABIs
+    // arm64-v8a for the phone, armeabi-v7a for a 32-bit one or a TV box, x86_64 for
+    // the emulator, universal for anything else. 19-LinkOut.sh links the ABIs
     // named in LINK_ABIS into OUT/.
     splits {
         abi {
             isEnable = true
             reset()
-            include("arm64-v8a", "x86_64")
+            include("arm64-v8a", "armeabi-v7a", "x86_64")
             isUniversalApk = true
         }
     }
@@ -197,7 +197,7 @@ val renameReleaseApks by tasks.registering(RenameApks::class) {
     projectName.set("photobox")
     versionName.set(releaseVersionName)
     buildType.set("release")
-    abis.set(listOf("universal", "arm64-v8a", "x86_64"))
+    abis.set(listOf("universal", "arm64-v8a", "armeabi-v7a", "x86_64"))
     outputDir.set(layout.buildDirectory.dir("outputs/apk/release"))
 }
 
@@ -210,7 +210,7 @@ val renameDebugApks by tasks.registering(RenameApks::class) {
     projectName.set("photobox")
     versionName.set(releaseVersionName)
     buildType.set("debug")
-    abis.set(listOf("universal", "arm64-v8a", "x86_64"))
+    abis.set(listOf("universal", "arm64-v8a", "armeabi-v7a", "x86_64"))
     outputDir.set(layout.buildDirectory.dir("outputs/apk/debug"))
 }
 

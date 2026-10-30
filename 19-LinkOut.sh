@@ -4,6 +4,7 @@
 # names, and sweep everything else out of that folder:
 #
 #   OUT/<project>-<version>-arm64-v8a.apk
+#   OUT/<project>-<version>-armeabi-v7a.apk
 #   OUT/<project>-<version>-universal.apk
 #
 # One place to copy a build from, instead of a path deep inside app/build/.

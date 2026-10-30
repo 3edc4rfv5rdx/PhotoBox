@@ -29,4 +29,5 @@ Work in progress, built to `TZ.md`.
 ## Install
 
 Download the APK from the [latest release](https://github.com/3edc4rfv5rdx/PhotoBox/releases/latest):
-`photobox-<version>-arm64-v8a.apk` runs on almost every modern phone.
+`photobox-<version>-arm64-v8a.apk` runs on almost every modern phone;
+`photobox-<version>-armeabi-v7a.apk` is for a 32-bit one or a TV box.
