@@ -6,113 +6,39 @@ files, not on the system's media library.**
 ![Android 11+](https://img.shields.io/badge/Android-11%2B-3DDC84?logo=android&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-Compose-7F52FF?logo=kotlin&logoColor=white)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/3edc4rfv5rdx/PhotoBox)](https://github.com/3edc4rfv5rdx/PhotoBox/releases/latest)
 
-Work in progress, built to `TZ.md`.
+An album is a folder. PhotoBox finds them in the folders you tell it to
+search — DCIM and Pictures to start with — on the phone and the SD card, and
+shows what is really there, hidden folders included if you want them.
 
 ## Features
 
-- **Albums**: every folder with photos or videos directly in it, looked for
-  in the search folders — DCIM and Pictures until changed — one section each.
-  **+** → Add search folder adds one; ⋮ on a section's heading takes it out
-  of the search, the files untouched. With none left, the whole phone and SD
-  card are searched. A folder with music in it is no album: its pictures are
-  covers. Each album shows its newest file as the cover, the number of files
-  and where it is; sorted by name, newest first or most files first. Folders
-  that start with a dot or hold a `.nomedia` file — and everything under
-  them — are listed only with "Show hidden folders" on in Settings. Tapping
-  the album's name at the top opens the list. **+** → New album makes one, in
-  the first search folder or any folder picked, and ⋮ on a section's heading
-  makes one in that folder. A folder with nothing in it at all shows as an
-  empty album, the app's icon for its cover. An album's ⋮ renames its folder,
-  and an empty one's deletes it — as does the button on an empty album opened.
-- **Thumbnails**: the open album as a grid, 2 to 5 across — pinch to change,
-  or set it in Settings, and the choice is kept. Newest first under a heading per day, or by name or
-  size from the ⋮ menu. A long album gets a bar on the right edge to drag
-  through it, showing the month, letter or size it has reached. The date is
-  when the photo or video was taken, from its EXIF or container, else the
-  file's own time; it is read once and cached. ⋮ → Filter narrows the
-  album to names containing some text and to days from one date to another;
-  a line under the top bar says what it looks for and how many files of all
-  pass, a tap on it changes the filter and ✕ takes it off. The viewer and the
-  slideshow go through the filtered files only; another album opens
-  unfiltered.
-- **Picking files**: a long tap on a thumbnail picks it, and while anything
-  is picked a tap picks or drops more; ⋮ → Select all picks the whole album.
-  The bar on top then shares them with another app or moves them to the
-  trash, and its ⋮ turns, moves or copies them, or renames the one picked;
-  ← or Back drops the pick.
-- **Turn**: ⋮ → Rotate turns a JPEG, PNG or WebP 90° clockwise by its EXIF
-  orientation only — the picture itself is not re-encoded, so nothing is
-  lost however often it is turned — keeping the file's time.
-- **Rename**: the name is typed without its extension, which stays; a RAW
-  beside the photo is renamed with it. A name already taken there is refused.
-- **Move and copy**: from the picked files' ⋮ or the viewer's, into a folder
-  chosen in PhotoBox's own folder list, where + makes a new one. A RAW
-  beside a photo goes with it. A name already taken there gets " (1)",
-  " (2)" … — the same number on a photo and its RAW — so nothing is
-  overwritten. Onto the SD card from the phone, or back, a move is a copy
-  followed by deleting the original once the copy is whole. Moving, copying
-  and trashing many files show how far they have got — moving and copying by
-  bytes, with the sizes.
-- **Viewer**: a tap on a thumbnail opens it full screen, in the grid's order.
-  Swipe to the next or previous file; pinch or double-tap to zoom, and drag
-  while zoomed. A tap hides or shows the bar on top, whose ⋮ shares, turns,
-  renames, moves or copies the file.
-  A video shows a still
-  with a play button: it plays in PhotoBox's own player — play and pause, the
-  time and a seek bar, hidden and shown by a tap — or in another app with
-  "Video player" set to that in Settings.
-- **Trash**: the viewer's ⋮ → To trash moves the file — and a RAW beside it
-  under the same name — into the trash of its storage, `Documents/PhotoBox/.Trash`
-  on the phone or the SD card, which other galleries pass by; the viewer moves
-  on to the next one. ⋮ → Trash lists it all under how many files and how
-  much room: what each is, where it goes back to and when it was deleted. A
-  tap opens one full screen under its own name, swiping through the trash;
-  its ⋮ restores it or
-  deletes it for good. The bar on top restores or deletes everything, with
-  progress. A file is deleted for good once it has been in the trash longer
-  than set in Settings — 30 days unless changed — checked at each start.
-- **Info**: the viewer's ⋮ menu and the slideshow's (i) show a file's name,
-  folder, size, picture size, length of a video, when it was taken and last
-  changed, the camera and its settings, and where it was taken — a tap on
-  that opens it in a map app.
-- **Turning**: the app stays in the device's own orientation — portrait on a
-  phone, landscape on a TV box — and photos, videos and the slideshow
-  turn with the phone by its sensor, whatever the system's auto-rotate says;
-  with the phone on its side, a swipe still runs along the photo. Settings
-  can make them turn only while the system's auto-rotate is on, or never.
-- **Slideshow**: ⋮ → Slideshow goes through the album's photos in the grid's
-  order, each fading into the next; videos are passed over. After the last
-  one it stops with the app's icon over it and the controls up; Play starts
-  it over.
-  Each photo stays up for the time set in Settings with a slider, 1 to 30
-  seconds, 5 unless changed.
-  The screen stays on and the system bars are hidden. A tap shows the
-  controls — back at the top; previous, info, pause or go on and next in a
-  block at the bottom — which hide again after
-  a few seconds; Back stops it too. After a pause it moves on 3 seconds after
-  Go on. Started again in the album the last slideshow ran in, it asks
-  whether to go on from the photo it stopped on or begin from the start —
-  unless it was seen to the end.
-- **Open with**: PhotoBox is offered for opening a photo or video from
-  another app — a file manager, a messenger. It shows the file full screen
-  among the rest of its folder, in the gallery's order, with its info and
-  Share in ⋮; Back returns to that app. A file that cannot be found on
-  storage is copied in and shown alone. As the video player of choice, the
-  phone's own players are used, never PhotoBox itself.
-- **Picking for another app**: when an app asks for a photo or video — to
-  attach, to post — PhotoBox can be the one to choose it from. Its albums,
-  sorting and filter are all there, showing only the types asked for; a tap
-  hands the file over. An app that takes several gets a long tap to pick
-  them and ✓ to send them back. The trash, slideshow and settings stay out of
-  the way meanwhile.
-- **TV box**: PhotoBox shows in the Android TV launcher too, and needs no
-  touchscreen. With a remote, a frame marks the thumbnail the arrows are on
-  and holding OK picks it; in the viewer ← and → page and OK shows or hides
-  the bar; in the slideshow ← and → step and OK pauses or goes on; in the
-  video player ← and → jump 10 seconds and OK plays or pauses. An air
-  mouse works as a finger does.
-- **Folder access**: PhotoBox reads files directly and needs "All files access".
+- **Albums**: one section per search folder, sorted by name, date or file count.
+  Make, rename and delete albums; a folder of music is not taken for one.
+- **Thumbnails**: a grid of 2 to 5 across (pinch or Settings), grouped by the
+  day taken, with a fast-scroll bar, sorting and a filter by name and dates.
+  Dates come from EXIF and are cached.
+- **Viewer**: swipe, pinch and double-tap zoom; videos play in the built-in
+  player or another app.
+- **File actions**: share, rotate 90° without loss (EXIF only), rename, move
+  or copy to any folder (with New folder), on one file or a long-tap
+  selection. A RAW beside a photo always goes with it; nothing is
+  overwritten.
+- **Trash**: its own, one per storage in `Documents/PhotoBox/.Trash`, with
+  restore, delete for good and auto-cleanup after 7 to 90 days.
+- **Slideshow**: crossfades through the album, 1 to 30 seconds a photo, with
+  pause, previous, next and info; picks up where it stopped.
+- **Info**: size, resolution, date taken, camera settings and the place on a map.
+- **Rotation**: photos, videos and the slideshow turn with the sensor even
+  with auto-rotate off, while the app stays upright — or not, as set.
+- **Other apps**: open a photo or video with PhotoBox to browse its whole
+  folder, or pick files from PhotoBox when an app asks for one.
+- **TV boxes**: in the Android TV launcher, and works with a remote or an air mouse.
+- English, Russian and Ukrainian; light and dark themes with accent colours.
+
+PhotoBox needs "All files access": it reads folders directly, not through the
+media library.
 
 ## Install
 
