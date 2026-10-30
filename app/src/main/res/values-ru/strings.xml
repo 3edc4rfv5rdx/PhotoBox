@@ -127,4 +127,13 @@
     <string name="rotate">Повернуть</string>
     <string name="rotating">Повёрнуто %1$s из %2$s</string>
     <string name="rotate_failed">Не всё удалось повернуть</string>
+    <string name="filter">Фильтр</string>
+    <string name="filter_name">Имя содержит</string>
+    <string name="filter_from">С</string>
+    <string name="filter_to">По</string>
+    <string name="filter_any_date">Любой день</string>
+    <string name="clear">Очистить</string>
+    <string name="filter_off">Снять фильтр</string>
+    <string name="filter_nothing">Под фильтр ничего не подходит</string>
+    <string name="filter_count">%1$s из %2$s</string>
 </resources>

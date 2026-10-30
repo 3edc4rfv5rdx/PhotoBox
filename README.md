@@ -30,7 +30,12 @@ Work in progress, built to `TZ.md`.
   size from the ⋮ menu. A long album gets a bar on the right edge to drag
   through it, showing the month, letter or size it has reached. The date is
   when the photo or video was taken, from its EXIF or container, else the
-  file's own time; it is read once and cached.
+  file's own time; it is read once and cached. ⋮ → Filter narrows the
+  album to names containing some text and to days from one date to another;
+  a line under the top bar says what it looks for and how many files of all
+  pass, a tap on it changes the filter and ✕ takes it off. The viewer and the
+  slideshow go through the filtered files only; another album opens
+  unfiltered.
 - **Picking files**: a long tap on a thumbnail picks it, and while anything
   is picked a tap picks or drops more; ⋮ → Select all picks the whole album.
   The bar on top then shares them with another app or moves them to the

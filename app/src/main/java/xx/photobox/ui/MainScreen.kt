@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import xx.photobox.AlbumOrder
 import xx.photobox.AppSettings
 import xx.photobox.GalleryViewModel
+import xx.photobox.ItemFilter
 import xx.photobox.ItemOrder
 import xx.photobox.MediaItem
 import xx.photobox.R
@@ -55,6 +56,7 @@ import xx.photobox.isVideo
 import xx.photobox.canRotate
 import xx.photobox.checkAlbumRename
 import xx.photobox.checkRename
+import xx.photobox.filterItems
 import xx.photobox.sortItems
 import java.io.File
 
@@ -102,7 +104,11 @@ fun MainScreen(
     // and shift every index, but the file stays the one it was.
     var viewerPath by rememberSaveable { mutableStateOf<String?>(null) }
     val items = vm.items
-    val sorted = remember(items, itemOrder) { items?.let { sortItems(it, itemOrder) } }
+    // Keyed by the album, so another one opens unfiltered.
+    var filter by rememberSaveable(vm.album?.path) { mutableStateOf(ItemFilter()) }
+    var editingFilter by remember { mutableStateOf(false) }
+    // What the grid, the viewer and the slideshow go through: the album sorted, then filtered.
+    val sorted = remember(items, itemOrder, filter) { items?.let { filterItems(sortItems(it, itemOrder), filter) } }
     val photos = remember(sorted) { sorted?.filterNot { isVideo(it.file.path) }.orEmpty() }
     // The files picked by a long tap, by path. Keyed by the album, so another one opens with none picked.
     var selection by rememberSaveable(vm.album?.path) { mutableStateOf(emptySet<String>()) }
@@ -378,6 +384,10 @@ fun MainScreen(
                                     menuOpen = false
                                     choosingItemOrder = true
                                 }
+                                AppMenuItem(stringResource(R.string.filter), enabled = vm.album != null) {
+                                    menuOpen = false
+                                    editingFilter = true
+                                }
                                 AppMenuItem(stringResource(R.string.slideshow), enabled = photos.isNotEmpty()) {
                                     menuOpen = false
                                     val last = vm.album?.let { AppSettings.slideshowFrame(context, it) }
@@ -391,6 +401,15 @@ fun MainScreen(
                                 }
                             }
                         }
+                    }
+                    if (vm.album != null && !filter.isEmpty) {
+                        FilterBar(
+                            filter = filter,
+                            shown = sorted?.size ?: 0,
+                            total = items?.size ?: 0,
+                            onEdit = { editingFilter = true },
+                            onClear = { filter = ItemFilter() },
+                        )
                     }
                     when {
                         !vm.hasStorageAccess -> EmptyState(
@@ -416,6 +435,7 @@ fun MainScreen(
                                     order = itemOrder,
                                     columns = gridColumns,
                                     onColumns = { AppSettings.setGridColumns(context, it) },
+                                    filtered = !filter.isEmpty,
                                     selected = selection,
                                     onOpen = { viewerPath = it.file.path },
                                     onSelect = { item ->
@@ -577,6 +597,17 @@ fun MainScreen(
                     slideshowStart = 0
                 }
             },
+        )
+    }
+
+    if (screen == Screen.THUMBNAILS && editingFilter) {
+        FilterDialog(
+            filter = filter,
+            onApply = {
+                filter = it
+                editingFilter = false
+            },
+            onDismiss = { editingFilter = false },
         )
     }
 

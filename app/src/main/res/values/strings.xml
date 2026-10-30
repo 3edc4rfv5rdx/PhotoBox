@@ -123,4 +123,13 @@
     <string name="rotate">Rotate</string>
     <string name="rotating">Rotated %1$s of %2$s</string>
     <string name="rotate_failed">Not everything could be rotated</string>
+    <string name="filter">Filter</string>
+    <string name="filter_name">Name contains</string>
+    <string name="filter_from">From</string>
+    <string name="filter_to">To</string>
+    <string name="filter_any_date">Any day</string>
+    <string name="clear">Clear</string>
+    <string name="filter_off">Clear the filter</string>
+    <string name="filter_nothing">Nothing matches the filter</string>
+    <string name="filter_count">%1$s of %2$s</string>
 </resources>

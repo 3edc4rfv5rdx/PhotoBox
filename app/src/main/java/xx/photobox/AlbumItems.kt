@@ -1,6 +1,7 @@
 package xx.photobox
 
 import java.io.File
+import java.io.Serializable
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -9,6 +10,32 @@ import java.time.ZoneId
 class MediaItem(val file: File, val taken: Long, val size: Long)
 
 enum class ItemOrder { DATE, NAME, SIZE }
+
+/**
+ * What the grid is narrowed to: names that contain [name], case aside, taken
+ * from [from] to [to], both days whole. A part left empty lets everything
+ * through; dates given the wrong way round are taken the right way.
+ */
+data class ItemFilter(val name: String = "", val from: LocalDate? = null, val to: LocalDate? = null) : Serializable {
+    val isEmpty: Boolean
+        get() = name.isBlank() && from == null && to == null
+}
+
+/** Those of [items] that [filter] lets through, in the order given. */
+fun filterItems(items: List<MediaItem>, filter: ItemFilter, zone: ZoneId = ZoneId.systemDefault()): List<MediaItem> {
+    if (filter.isEmpty) return items
+    val name = filter.name.trim()
+    val (first, last) = if (filter.from != null && filter.to != null && filter.from > filter.to) {
+        filter.to to filter.from
+    } else {
+        filter.from to filter.to
+    }
+    return items.filter { item ->
+        val day = dayOf(item.taken, zone)
+        (name.isEmpty() || item.file.name.contains(name, ignoreCase = true)) &&
+            (first == null || day >= first) && (last == null || day <= last)
+    }
+}
 
 /** [items] newest, A to Z or largest first; ties fall back to the name, then the path. */
 fun sortItems(items: List<MediaItem>, order: ItemOrder): List<MediaItem> {

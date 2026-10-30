@@ -92,4 +92,21 @@ class AlbumItemsTest {
         assertTrue(!sameItems(listOf(a, b), listOf(a, item("b.jpg", 3, 5))))
         assertTrue(!sameItems(listOf(a, b), listOf(a, item("c.jpg", 3, 4))))
     }
+
+    @Test
+    fun filterByNameAndDays() {
+        val a = item("IMG_trip.jpg", taken = at("2024-05-01", hour = 0))
+        val b = item("img_home.jpg", taken = at("2024-05-31", hour = 23))
+        val c = item("other.jpg", taken = at("2024-06-01"))
+        val all = listOf(a, b, c)
+        assertEquals(all, filterItems(all, ItemFilter(), utc))
+        assertEquals(listOf(a, b), filterItems(all, ItemFilter(name = " img "), utc))
+        // Both ends are whole days.
+        val may = ItemFilter(from = LocalDate.parse("2024-05-01"), to = LocalDate.parse("2024-05-31"))
+        assertEquals(listOf(a, b), filterItems(all, may, utc))
+        // The wrong way round is taken the right way.
+        assertEquals(listOf(a, b), filterItems(all, ItemFilter(from = may.to, to = may.from), utc))
+        assertEquals(listOf(c), filterItems(all, ItemFilter(from = LocalDate.parse("2024-06-01")), utc))
+        assertEquals(listOf(a), filterItems(all, ItemFilter(name = "trip", to = LocalDate.parse("2024-05-31")), utc))
+    }
 }
