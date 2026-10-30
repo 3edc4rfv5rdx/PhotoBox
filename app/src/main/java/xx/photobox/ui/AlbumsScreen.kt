@@ -12,7 +12,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -160,7 +159,7 @@ fun NewAlbumDialog(
             }
         },
         confirmButton = {
-            Button(onClick = onCreate, enabled = check == AlbumNameCheck.OK) { Text(stringResource(R.string.create)) }
+            DialogConfirmButton(stringResource(R.string.create), enabled = check == AlbumNameCheck.OK, onClick = onCreate)
         },
         dismissButton = { DialogDismissButton(stringResource(R.string.cancel), onDismiss) },
     )

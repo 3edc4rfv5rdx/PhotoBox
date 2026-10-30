@@ -30,6 +30,10 @@ Work in progress, built to `TZ.md`.
   with a play button: it plays in PhotoBox's own player — play and pause, the
   time and a seek bar, hidden and shown by a tap — or in another app with
   "Video player" set to that in Settings.
+- **Info**: the viewer's ⋮ menu and the slideshow's (i) show a file's name,
+  folder, size, picture size, length of a video, when it was taken and last
+  changed, the camera and its settings, and where it was taken — a tap on
+  that opens it in a map app.
 - **Turning**: the app stays in the device's own orientation — portrait on a
   phone, landscape on a TV box — and photos, videos and the slideshow
   turn with the phone by its sensor, whatever the system's auto-rotate says;
@@ -39,7 +43,12 @@ Work in progress, built to `TZ.md`.
   order, round and round, each fading into the next; videos are passed over.
   Each photo stays up for the time set in Settings with a slider, 1 to 30
   seconds, 5 unless changed.
-  The screen stays on and the system bars are hidden; a tap or Back ends it.
+  The screen stays on and the system bars are hidden. A tap shows the
+  controls — back at the top; previous, info, pause or go on and next in a
+  block at the bottom — which hide again after
+  a few seconds; Back stops it too. After a pause it moves on 3 seconds after
+  Go on. Started again in the album the last slideshow ran in, it asks
+  whether to go on from the photo it stopped on or begin from the start.
 - **Folder access**: PhotoBox reads files directly and needs "All files access".
 
 ## Install

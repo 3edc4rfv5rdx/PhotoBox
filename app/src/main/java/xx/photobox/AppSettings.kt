@@ -12,6 +12,7 @@ import androidx.core.content.edit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.io.File
 import java.util.Locale
 
 /** Light/dark override; SYSTEM follows the device setting. */
@@ -50,6 +51,8 @@ object AppSettings {
     private const val KEY_SHOW_HIDDEN = "show_hidden"
     private const val KEY_ALBUM_ORDER = "album_order"
     private const val KEY_ALBUM_PATH = "album_path"
+    private const val KEY_SLIDESHOW_ALBUM = "slideshow_album"
+    private const val KEY_SLIDESHOW_PHOTO = "slideshow_photo"
     private const val KEY_GRID_COLUMNS = "grid_columns"
     private const val KEY_ITEM_ORDER = "item_order"
     private const val KEY_VIDEO_PLAYER = "video_player"
@@ -164,6 +167,24 @@ object AppSettings {
 
     fun setAlbumPath(context: Context, path: String) {
         prefs(context).edit { putString(KEY_ALBUM_PATH, path) }
+    }
+
+    /**
+     * The photo the last slideshow showed last, for the next one to go on
+     * from — only when that was in [album]. One is kept for the whole app: a
+     * slideshow in another album writes over it.
+     */
+    fun slideshowFrame(context: Context, album: File): String? {
+        val prefs = prefs(context)
+        return prefs.getString(KEY_SLIDESHOW_PHOTO, null)
+            ?.takeIf { prefs.getString(KEY_SLIDESHOW_ALBUM, null) == album.path }
+    }
+
+    fun setSlideshowFrame(context: Context, album: File, photo: String) {
+        prefs(context).edit {
+            putString(KEY_SLIDESHOW_ALBUM, album.path)
+            putString(KEY_SLIDESHOW_PHOTO, photo)
+        }
     }
 
     /**

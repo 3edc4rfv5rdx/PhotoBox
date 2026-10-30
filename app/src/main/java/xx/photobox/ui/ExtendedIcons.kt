@@ -110,3 +110,47 @@ val Icons.Filled.Pause: ImageVector
     }
 
 private var _pause: ImageVector? = null
+
+val Icons.Filled.SkipPrevious: ImageVector
+    get() {
+        if (_skipPrevious != null) return _skipPrevious!!
+        _skipPrevious = materialIcon(name = "Filled.SkipPrevious") {
+            materialPath {
+                moveTo(6.0f, 6.0f)
+                horizontalLineToRelative(2.0f)
+                verticalLineToRelative(12.0f)
+                horizontalLineTo(6.0f)
+                close()
+                moveTo(9.5f, 12.0f)
+                lineToRelative(8.5f, 6.0f)
+                verticalLineTo(6.0f)
+                close()
+            }
+        }
+        return _skipPrevious!!
+    }
+
+private var _skipPrevious: ImageVector? = null
+
+val Icons.Filled.SkipNext: ImageVector
+    get() {
+        if (_skipNext != null) return _skipNext!!
+        _skipNext = materialIcon(name = "Filled.SkipNext") {
+            materialPath {
+                moveTo(6.0f, 18.0f)
+                lineToRelative(8.5f, -6.0f)
+                lineTo(6.0f, 6.0f)
+                verticalLineToRelative(12.0f)
+                close()
+                moveTo(16.0f, 6.0f)
+                verticalLineToRelative(12.0f)
+                horizontalLineToRelative(2.0f)
+                verticalLineTo(6.0f)
+                horizontalLineToRelative(-2.0f)
+                close()
+            }
+        }
+        return _skipNext!!
+    }
+
+private var _skipNext: ImageVector? = null

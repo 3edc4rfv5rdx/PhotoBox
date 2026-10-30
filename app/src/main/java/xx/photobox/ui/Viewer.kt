@@ -113,6 +113,9 @@ fun ViewerScreen(
     val videoPlayer by AppSettings.videoPlayer.collectAsState()
     // The video playing in the app's own player, over the viewer.
     var playing by rememberSaveable { mutableStateOf<String?>(null) }
+    var menuOpen by remember { mutableStateOf(false) }
+    // The file whose info is open.
+    var info by rememberSaveable { mutableStateOf<String?>(null) }
     val rotation = rememberMediaRotation()
 
     // A new page, or the photo turned under the fingers: either way it opens unzoomed.
@@ -186,12 +189,22 @@ fun ViewerScreen(
                     "${pagerState.currentPage + 1} / ${sorted.size}",
                     color = Color.White,
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(end = 12.dp),
+                    modifier = Modifier.padding(end = 4.dp),
                 )
+                Box {
+                    MoreButton(onClick = { menuOpen = true }, tint = Color.White)
+                    AppMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                        AppMenuItem(stringResource(R.string.info), enabled = current != null) {
+                            menuOpen = false
+                            info = current?.file?.path
+                        }
+                    }
+                }
             }
         }
 
         playing?.let { VideoPlayerScreen(it, onClose = { playing = null }) }
+        info?.let { InfoDialog(File(it), onDismiss = { info = null }) }
     }
 }
 

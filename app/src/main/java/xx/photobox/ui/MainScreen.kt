@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -78,7 +79,10 @@ fun MainScreen(
     val sorted = remember(items, itemOrder) { items?.let { sortItems(it, itemOrder) } }
     val photos = remember(sorted) { sorted?.filterNot { isVideo(it.file.path) }.orEmpty() }
     val slideSeconds by AppSettings.slideSeconds.collectAsState()
-    var slideshow by rememberSaveable { mutableStateOf(false) }
+    // Where the running slideshow started; null while none runs.
+    var slideshowStart by rememberSaveable { mutableStateOf<Int?>(null) }
+    // Where the album's last slideshow got to, while asked whether to go on from there.
+    var slideshowResume by rememberSaveable { mutableStateOf<Int?>(null) }
     val backToThumbnails = { screen = Screen.THUMBNAILS }
 
     LaunchedEffect(screen) {
@@ -173,7 +177,10 @@ fun MainScreen(
                                 }
                                 AppMenuItem(stringResource(R.string.slideshow), enabled = photos.isNotEmpty()) {
                                     menuOpen = false
-                                    slideshow = true
+                                    val last = vm.album?.let { AppSettings.slideshowFrame(context, it) }
+                                    val at = photos.indexOfFirst { it.file.path == last }
+                                    // From the first photo there is nothing to choose between.
+                                    if (at > 0) slideshowResume = at else slideshowStart = 0
                                 }
                                 AppMenuItem(stringResource(R.string.settings)) {
                                     menuOpen = false
@@ -226,11 +233,37 @@ fun MainScreen(
                         )
                     }
                 }
-                if (slideshow && photos.isNotEmpty()) {
-                    SlideshowScreen(photos, slideSeconds, onClose = { slideshow = false })
+                val start = slideshowStart
+                if (start != null && photos.isNotEmpty()) {
+                    SlideshowScreen(
+                        photos = photos,
+                        start = start,
+                        seconds = slideSeconds,
+                        onShown = { path -> vm.album?.let { AppSettings.setSlideshowFrame(context, it, path) } },
+                        onClose = { slideshowStart = null },
+                    )
                 }
             }
         }
+    }
+
+    slideshowResume?.let { at ->
+        AlertDialog(
+            onDismissRequest = { slideshowResume = null },
+            title = { Text(stringResource(R.string.slideshow)) },
+            confirmButton = {
+                DialogConfirmButton(stringResource(R.string.slideshow_continue)) {
+                    slideshowResume = null
+                    slideshowStart = at
+                }
+            },
+            dismissButton = {
+                DialogDismissButton(stringResource(R.string.slideshow_from_start)) {
+                    slideshowResume = null
+                    slideshowStart = 0
+                }
+            },
+        )
     }
 
     if (screen == Screen.THUMBNAILS && choosingItemOrder) {

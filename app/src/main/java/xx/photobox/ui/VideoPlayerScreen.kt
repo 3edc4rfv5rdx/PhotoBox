@@ -132,9 +132,12 @@ fun VideoPlayerScreen(path: String, onClose: () -> Unit) {
             )
         }
         if (controls) {
-            Box(Modifier.align(Alignment.TopStart).windowInsetsPadding(WindowInsets.systemBars)) {
-                LargeIconButton(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back), onClose, tint = Color.White)
-            }
+            OverlayIconButton(
+                Icons.AutoMirrored.Filled.ArrowBack,
+                stringResource(R.string.back),
+                onClose,
+                Modifier.align(Alignment.TopStart).windowInsetsPadding(WindowInsets.systemBars),
+            )
             Row(
                 Modifier
                     .align(Alignment.BottomCenter)

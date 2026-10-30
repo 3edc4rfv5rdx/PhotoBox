@@ -34,6 +34,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -187,15 +189,46 @@ fun LargeIconButton(
     }
 }
 
-/** The ⋮ button that opens an [AppMenu]. */
+/**
+ * A [LargeIconButton] floating over a photo or video rather than a bar: white
+ * on a round dark backdrop, so it shows on a bright picture as well as a dark one.
+ */
 @Composable
-fun MoreButton(onClick: () -> Unit, enabled: Boolean = true) {
-    LargeIconButton(Icons.Filled.MoreVert, stringResource(R.string.more_options), onClick, enabled)
+fun OverlayIconButton(icon: ImageVector, contentDescription: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(modifier.padding(8.dp).background(Color.Black.copy(alpha = 0.45f), CircleShape)) {
+        LargeIconButton(icon, contentDescription, onClick, tint = Color.White)
+    }
+}
+
+/** The ⋮ button that opens an [AppMenu]; [tint] as for [LargeIconButton]. */
+@Composable
+fun MoreButton(onClick: () -> Unit, enabled: Boolean = true, tint: Color? = null) {
+    LargeIconButton(Icons.Filled.MoreVert, stringResource(R.string.more_options), onClick, enabled, tint)
 }
 
 // ---------- Dialog pieces ----------
 
 private val DIALOG_BUTTON_PADDING = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+
+/** A dialog's main button; [danger] paints it red, for a step that cannot be undone. */
+@Composable
+fun DialogConfirmButton(text: String, danger: Boolean = false, enabled: Boolean = true, onClick: () -> Unit) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        contentPadding = DIALOG_BUTTON_PADDING,
+        colors = if (danger) {
+            ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+            )
+        } else {
+            ButtonDefaults.buttonColors()
+        },
+    ) {
+        Text(text, maxLines = 1)
+    }
+}
 
 @Composable
 fun DialogDismissButton(text: String, onClick: () -> Unit) {
