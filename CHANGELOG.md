@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The open album stands out in the album list filled with the accent colour, and the list opens scrolled to it
 - N: Trash: the viewer's ⋮ sends a file, RAW and all, to a hidden trash in its own folder; the trash screen restores or deletes for good, one by one or all, and keeps files for the days set in Settings
 - N: Albums are looked for in search folders — DCIM and Pictures to start with — listed as sections that + adds to and ⋮ takes out; a folder with music in it is no album
 - N: Info on a file — name, folder, size, picture size, dates, camera and its settings, place on a map — from the viewer's ⋮ menu and the slideshow's controls

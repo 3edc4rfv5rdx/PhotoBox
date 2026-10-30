@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
@@ -21,12 +22,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -71,18 +74,30 @@ fun AlbumsScreen(
             roots.map { root -> root to sortAlbums(byRoot[root].orEmpty(), order) }
         }
     }
+    val listState = rememberLazyListState()
+    // Once per visit, the first time the list is there: on to the open album,
+    // with a couple of lines above it, so it is in sight without a search.
+    // A rescan landing later leaves the list where the user has put it.
+    var scrolledToCurrent by remember { mutableStateOf(false) }
+    LaunchedEffect(sections) {
+        if (scrolledToCurrent || sections == null) return@LaunchedEffect
+        scrolledToCurrent = true
+        val at = listIndexOf(sections, current) ?: return@LaunchedEffect
+        listState.scrollToItem((at - LINES_ABOVE_CURRENT).coerceAtLeast(0))
+    }
     Column(modifier.fillMaxSize()) {
         when {
             sections == null -> ProgressState(stringResource(R.string.albums_scanning))
 
             else -> {
                 if (scanning) LinearProgressIndicator(Modifier.fillMaxWidth())
-                LazyColumn(Modifier.weight(1f)) {
+                LazyColumn(Modifier.weight(1f), state = listState) {
+                    // Laid out line for line as listIndexOf counts them.
                     for ((root, rootAlbums) in sections) {
                         item(key = "root:${root.path}") {
                             RootHeading(root, onRemove = onRemoveRoot?.let { remove -> { remove(root) } })
                         }
-                        if (rootAlbums.isEmpty() && !scanning) {
+                        if (rootAlbums.isEmpty()) {
                             item(key = "empty:${root.path}") {
                                 Text(
                                     stringResource(if (root.isDirectory) R.string.root_empty else R.string.root_missing),
@@ -101,6 +116,26 @@ fun AlbumsScreen(
             }
         }
     }
+}
+
+/** How many lines are left above the open album when the list scrolls to it. */
+private const val LINES_ABOVE_CURRENT = 2
+
+/** Where [current] sits among the list's lines — a heading per section, then its albums or one "none" line. */
+private fun listIndexOf(sections: List<Pair<File, List<Album>>>, current: File?): Int? {
+    if (current == null) return null
+    var line = 0
+    for ((_, albums) in sections) {
+        line++
+        if (albums.isEmpty()) {
+            line++
+            continue
+        }
+        val at = albums.indexOfFirst { it.dir == current }
+        if (at >= 0) return line + at
+        line += albums.size
+    }
+    return null
 }
 
 /** A section's heading: the folder's name and where it is, and its ⋮ to take it out of the search. */
@@ -146,8 +181,17 @@ private fun RootHeading(root: File, onRemove: (() -> Unit)?) {
 
 @Composable
 private fun AlbumRow(album: Album, selected: Boolean, onClick: () -> Unit) {
+    // The open album the other way round, filled with the accent, so it is
+    // found at a glance in a long list.
+    val scheme = MaterialTheme.colorScheme
+    val background = if (selected) scheme.primary else Color.Transparent
+    val content = if (selected) scheme.onPrimary else scheme.onSurface
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 8.dp),
+        Modifier
+            .fillMaxWidth()
+            .background(background)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -156,18 +200,20 @@ private fun AlbumRow(album: Album, selected: Boolean, onClick: () -> Unit) {
             Text(
                 album.dir.name,
                 style = MaterialTheme.typography.titleLarge,
-                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                color = content,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
                 pluralStringResource(R.plurals.file_count, album.count, formatCount(album.count)),
                 style = MaterialTheme.typography.bodyMedium,
+                color = content,
             )
             // Two albums can share a name — Camera on the phone and on a card.
             Text(
                 pathOnVolume(album.dir, album.root),
                 style = MaterialTheme.typography.bodySmall,
+                color = content,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
