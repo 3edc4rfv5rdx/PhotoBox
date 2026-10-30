@@ -135,4 +135,5 @@
     <string name="open_failed">Could not open the file</string>
     <string name="pick_done">Done</string>
     <string name="move_left_originals">Some files were copied but their originals could not be deleted</string>
+    <string name="setting_grid_columns">Thumbnails across</string>
 </resources>

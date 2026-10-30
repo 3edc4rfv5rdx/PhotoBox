@@ -139,4 +139,5 @@
     <string name="open_failed">Не вдалося відкрити файл</string>
     <string name="pick_done">Готово</string>
     <string name="move_left_originals">Частину файлів скопійовано, але оригінали видалити не вдалося</string>
+    <string name="setting_grid_columns">Мініатюр у ряд</string>
 </resources>

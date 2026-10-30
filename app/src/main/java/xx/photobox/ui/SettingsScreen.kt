@@ -35,6 +35,7 @@ import xx.photobox.AppSettings
 import xx.photobox.MediaRotation
 import xx.photobox.R
 import xx.photobox.SLIDE_SECONDS
+import xx.photobox.GRID_COLUMNS
 import xx.photobox.TRASH_DAYS
 import xx.photobox.ThemeMode
 import xx.photobox.VideoPlayer
@@ -44,9 +45,14 @@ import xx.photobox.supportedLanguages
 import kotlin.math.roundToInt
 
 /** Which editor is open; only one can be at a time. */
-private enum class Editing { NONE, THEME, ACCENT, LANGUAGE, PLAYER, ROTATION, TRASH }
+private enum class Editing { NONE, THEME, ACCENT, LANGUAGE, PLAYER, ROTATION, COLUMNS, TRASH }
 
-/** Theme, accent colour, language, the start-up update check, whether hidden albums are listed, the video player, the slideshow's pace, when photos turn and how long the trash keeps a file. */
+/**
+ * Theme, accent colour, language, the start-up update check, whether hidden
+ * albums are listed, the grid's columns — a pinch sets them too, but not from
+ * a TV remote — the video player, the slideshow's pace, when photos turn and
+ * how long the trash keeps a file.
+ */
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -58,6 +64,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     val slideSeconds by AppSettings.slideSeconds.collectAsState()
     val mediaRotation by AppSettings.mediaRotation.collectAsState()
     val trashDays by AppSettings.trashDays.collectAsState()
+    val gridColumns by AppSettings.gridColumns.collectAsState()
 
     val systemLabel = stringResource(R.string.language_system)
     val languages = remember(context, systemLabel) { supportedLanguages(context, systemLabel) }
@@ -112,6 +119,12 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         )
         HorizontalDivider()
         SwitchRow(stringResource(R.string.setting_show_hidden), showHidden) { AppSettings.setShowHidden(context, it) }
+        HorizontalDivider()
+        SettingRow(
+            label = stringResource(R.string.setting_grid_columns),
+            value = gridColumns.toString(),
+            onClick = { editing = Editing.COLUMNS },
+        )
         HorizontalDivider()
         SettingRow(
             label = stringResource(R.string.setting_video_player),
@@ -190,6 +203,18 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             onDismiss = { editing = Editing.NONE },
             onPick = {
                 AppSettings.setMediaRotation(context, it)
+                editing = Editing.NONE
+            },
+        )
+
+        Editing.COLUMNS -> ChoiceDialog(
+            title = stringResource(R.string.setting_grid_columns),
+            options = GRID_COLUMNS.toList(),
+            selected = gridColumns,
+            label = { it.toString() },
+            onDismiss = { editing = Editing.NONE },
+            onPick = {
+                AppSettings.setGridColumns(context, it)
                 editing = Editing.NONE
             },
         )

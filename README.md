@@ -26,7 +26,7 @@ Work in progress, built to `TZ.md`.
   empty album, the app's icon for its cover. An album's ⋮ renames its folder,
   and an empty one's deletes it — as does the button on an empty album opened.
 - **Thumbnails**: the open album as a grid, 2 to 5 across — pinch to change,
-  and the choice is kept. Newest first under a heading per day, or by name or
+  or set it in Settings, and the choice is kept. Newest first under a heading per day, or by name or
   size from the ⋮ menu. A long album gets a bar on the right edge to drag
   through it, showing the month, letter or size it has reached. The date is
   when the photo or video was taken, from its EXIF or container, else the

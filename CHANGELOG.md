@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Settings set the thumbnails across too, for a TV remote that cannot pinch
 - E: A move onto another storage that copies a file but cannot delete the original now says so instead of leaving it in both places quietly
 - F: An empty album opened offers Delete album right where it says it is empty
 - E: A zoomed photo comes back unzoomed once it is rotated
