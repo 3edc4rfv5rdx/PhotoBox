@@ -24,9 +24,13 @@
         android:networkSecurityConfig="@xml/updater_network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.PhotoBox">
+        <!-- nosensor: the interface stays in the device's own orientation —
+             portrait on a phone, landscape on a TV box — and only photos,
+             videos and the slideshow turn, by the sensor (SensorRotation.kt). -->
         <activity
             android:name=".MainActivity"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"
+            android:screenOrientation="nosensor"
+            android:configChanges="screenSize|screenLayout|smallestScreenSize|keyboardHidden|uiMode|density"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

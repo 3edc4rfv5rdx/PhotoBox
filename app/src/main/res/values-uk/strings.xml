@@ -51,6 +51,10 @@
     <string name="player_built_in">Вбудований</string>
     <string name="player_external">Зовнішній</string>
     <string name="video_play_failed">Не вдалося відтворити відео</string>
+    <string name="setting_slide_time">Час слайда</string>
+    <string name="seconds_short">%1$d с</string>
+    <string name="setting_sensor_rotation">Повертати фото і відео за датчиком</string>
+    <string name="pause">Пауза</string>
     <plurals name="file_count">
         <item quantity="one">%1$s файл</item>
         <item quantity="few">%1$s файли</item>

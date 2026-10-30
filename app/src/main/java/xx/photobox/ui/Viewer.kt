@@ -26,6 +26,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerScope
+import androidx.compose.foundation.pager.VerticalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -111,23 +113,20 @@ fun ViewerScreen(
     val videoPlayer by AppSettings.videoPlayer.collectAsState()
     // The video playing in the app's own player, over the viewer.
     var playing by rememberSaveable { mutableStateOf<String?>(null) }
+    val rotation = rememberMediaRotation()
 
-    LaunchedEffect(pagerState.currentPage) { zoom.reset() }
+    // A new page, or the photo turned under the fingers: either way it opens unzoomed.
+    LaunchedEffect(pagerState.currentPage, rotation) { zoom.reset() }
     LaunchedEffect(pagerState.settledPage) {
         sorted.getOrNull(pagerState.settledPage)?.let { onPage(it.file.path) }
     }
 
     Box(Modifier.fillMaxSize().background(Color.Black)) {
-        HorizontalPager(
-            state = pagerState,
-            beyondViewportPageCount = 1,
-            userScrollEnabled = !zoomed,
-            key = { sorted[it].file.path },
-            modifier = Modifier.fillMaxSize(),
-        ) { page ->
+        val pageContent: @Composable PagerScope.(Int) -> Unit = { page ->
             val path = sorted[page].file.path
             PhotoPage(
                 path = path,
+                rotation = rotation,
                 zoom = if (page == pagerState.currentPage) zoom else null,
                 next = sorted.getOrNull(page + 1)?.file?.path,
                 onTap = { chrome = !chrome },
@@ -137,6 +136,30 @@ fun ViewerScreen(
                         VideoPlayer.EXTERNAL -> playVideo(context, path)
                     }
                 },
+            )
+        }
+        // The swipe runs along the photo's own width, whichever way the phone
+        // is held: the next file comes in from the photo's right, which on the
+        // glass is below at 90, above at 270 and on the left at 180.
+        when (rotation) {
+            90, 270 -> VerticalPager(
+                state = pagerState,
+                beyondViewportPageCount = 1,
+                userScrollEnabled = !zoomed,
+                reverseLayout = rotation == 270,
+                key = { sorted[it].file.path },
+                modifier = Modifier.fillMaxSize(),
+                pageContent = pageContent,
+            )
+
+            else -> HorizontalPager(
+                state = pagerState,
+                beyondViewportPageCount = 1,
+                userScrollEnabled = !zoomed,
+                reverseLayout = rotation == 180,
+                key = { sorted[it].file.path },
+                modifier = Modifier.fillMaxSize(),
+                pageContent = pageContent,
             )
         }
 
@@ -218,7 +241,14 @@ private sealed interface PhotoState {
  * ahead once this one is up.
  */
 @Composable
-private fun PhotoPage(path: String, zoom: PhotoZoom?, next: String?, onTap: () -> Unit, onPlay: () -> Unit) {
+private fun PhotoPage(
+    path: String,
+    rotation: Int,
+    zoom: PhotoZoom?,
+    next: String?,
+    onTap: () -> Unit,
+    onPlay: () -> Unit,
+) {
     val video = isVideo(path)
     val state by produceState<PhotoState>(initialValue = PhotoState.Loading, key1 = path) {
         // A video's still is not kept: it is cancelled when paged past, and a
@@ -268,11 +298,10 @@ private fun PhotoPage(path: String, zoom: PhotoZoom?, next: String?, onTap: () -
     ) {
         when (val s = state) {
             PhotoState.Loading -> CircularProgressIndicator(color = Color.White)
-            is PhotoState.Loaded -> Image(
-                bitmap = s.bitmap.asImageBitmap(),
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                modifier = Modifier
+            // The zoom outside the turn: gestures are measured on the glass,
+            // so the zoom has to move the photo on the glass too.
+            is PhotoState.Loaded -> Box(
+                Modifier
                     .fillMaxSize()
                     .graphicsLayer {
                         val z = zoom
@@ -283,7 +312,16 @@ private fun PhotoPage(path: String, zoom: PhotoZoom?, next: String?, onTap: () -
                             translationY = z.offset.y
                         }
                     },
-            )
+            ) {
+                RotatedFrame(rotation, Modifier.fillMaxSize()) {
+                    Image(
+                        bitmap = s.bitmap.asImageBitmap(),
+                        contentDescription = null,
+                        contentScale = ContentScale.Fit,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+            }
             // A video with no still can still be played; the button says enough.
             PhotoState.Failed -> if (!video) Text(stringResource(R.string.photo_load_failed), color = Color.White)
         }
@@ -341,7 +379,7 @@ private fun decodeForScreen(path: String, signal: CancellationSignal): Bitmap? =
     decodeSampled(path, PHOTO_MAX_DIMENSION, signal, fit = true)
 
 /** The photo at [path] fitted to [PHOTO_MAX_DIMENSION], from [photoCache] or decoded once into it. */
-private fun loadPhoto(path: String): Deferred<Bitmap?> {
+internal fun loadPhoto(path: String): Deferred<Bitmap?> {
     photoCache.get(path)?.let { return CompletableDeferred(it) }
     return photoLoads.getOrPut(path) {
         photoScope.async {

@@ -19,6 +19,15 @@
          for the in-app language switch to miss. -->
     <issue id="AppBundleLocaleChanges" severity="ignore" />
 
+    <!-- The device's own orientation is the app's design: photos, videos and
+         the slideshow turn by the sensor on their own, the rest stays put. -->
+    <issue id="LockedOrientationActivity">
+        <ignore path="src/main/AndroidManifest.xml" />
+    </issue>
+    <issue id="DiscouragedApi">
+        <ignore regexp="Fixed screen orientations" />
+    </issue>
+
     <!-- Below Android 13 there is no per-app language setting for localeConfig
          to feed; the in-app switch covers those versions. -->
     <issue id="UnusedAttribute">

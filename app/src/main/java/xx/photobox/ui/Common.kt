@@ -3,6 +3,7 @@ package xx.photobox.ui
 import android.content.Context
 import android.text.format.Formatter
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,16 +47,22 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import xx.photobox.ACCENT_COUNT
 import xx.photobox.R
 import xx.photobox.ThemeMode
 import java.text.NumberFormat
+import java.util.Locale
 
 // ---------- Theme ----------
 
@@ -136,6 +143,20 @@ fun PhotoBoxTheme(themeMode: ThemeMode, accentIndex: Int, content: @Composable (
 
 /** A file size the way the system's own screens write it. */
 fun formatSize(context: Context, bytes: Long): String = Formatter.formatShortFileSize(context, bytes)
+
+/** A playing time as a clock: m:ss, or h:mm:ss from an hour up. */
+fun formatClock(millis: Long): String {
+    val total = millis.coerceAtLeast(0L) / 1000
+    val hours = total / 3600
+    val minutes = total % 3600 / 60
+    val seconds = total % 60
+    // Latin digits whatever the language, the way players write a time.
+    return if (hours > 0) {
+        String.format(Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
+    } else {
+        String.format(Locale.ROOT, "%d:%02d", minutes, seconds)
+    }
+}
 
 /** A count in the device's own digit grouping. */
 fun formatCount(n: Int): String = NumberFormat.getIntegerInstance().format(n)
@@ -266,6 +287,31 @@ fun AccentSwatch(color: Color, selected: Boolean, onClick: () -> Unit) {
             )
             .clickable(onClick = onClick),
     )
+}
+
+// ---------- Window ----------
+
+/** While on screen: the display stays lit. */
+@Composable
+fun KeepScreenOn() {
+    val view = LocalView.current
+    DisposableEffect(view) {
+        view.keepScreenOn = true
+        onDispose { view.keepScreenOn = false }
+    }
+}
+
+/** While on screen: the system bars are hidden, a swipe from the edge showing them for a moment. */
+@Composable
+fun HideSystemBars() {
+    val view = LocalView.current
+    val window = LocalActivity.current?.window
+    DisposableEffect(view, window) {
+        val controller = window?.let { WindowCompat.getInsetsController(it, view) }
+        controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller?.hide(WindowInsetsCompat.Type.systemBars())
+        onDispose { controller?.show(WindowInsetsCompat.Type.systemBars()) }
+    }
 }
 
 // ---------- Screens ----------

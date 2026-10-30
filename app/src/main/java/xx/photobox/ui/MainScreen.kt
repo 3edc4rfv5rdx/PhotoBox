@@ -37,6 +37,7 @@ import xx.photobox.AppSettings
 import xx.photobox.GalleryViewModel
 import xx.photobox.ItemOrder
 import xx.photobox.R
+import xx.photobox.isVideo
 import xx.photobox.sortItems
 
 /** The screens besides the album's thumbnails, each opened from the ⋮ menu or the title. */
@@ -75,6 +76,9 @@ fun MainScreen(
     var viewerPath by rememberSaveable { mutableStateOf<String?>(null) }
     val items = vm.items
     val sorted = remember(items, itemOrder) { items?.let { sortItems(it, itemOrder) } }
+    val photos = remember(sorted) { sorted?.filterNot { isVideo(it.file.path) }.orEmpty() }
+    val slideSeconds by AppSettings.slideSeconds.collectAsState()
+    var slideshow by rememberSaveable { mutableStateOf(false) }
     val backToThumbnails = { screen = Screen.THUMBNAILS }
 
     LaunchedEffect(screen) {
@@ -167,9 +171,9 @@ fun MainScreen(
                                     menuOpen = false
                                     choosingItemOrder = true
                                 }
-                                // Runs through the open album once the viewer is in.
-                                AppMenuItem(stringResource(R.string.slideshow), enabled = false) {
+                                AppMenuItem(stringResource(R.string.slideshow), enabled = photos.isNotEmpty()) {
                                     menuOpen = false
+                                    slideshow = true
                                 }
                                 AppMenuItem(stringResource(R.string.settings)) {
                                     menuOpen = false
@@ -221,6 +225,9 @@ fun MainScreen(
                             onClose = { viewerPath = null },
                         )
                     }
+                }
+                if (slideshow && photos.isNotEmpty()) {
+                    SlideshowScreen(photos, slideSeconds, onClose = { slideshow = false })
                 }
             }
         }

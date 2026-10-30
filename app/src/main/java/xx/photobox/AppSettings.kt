@@ -23,6 +23,10 @@ const val ACCENT_COUNT = 6
 /** Where a video plays: in the app's own player, or handed to another app. */
 enum class VideoPlayer { BUILT_IN, EXTERNAL }
 
+/** The times a slideshow can hold each photo for, in seconds. */
+val SLIDE_SECONDS = listOf(3, 5, 8, 10, 15, 30)
+const val DEFAULT_SLIDE_SECONDS = 5
+
 /** How many thumbnails across a pinch can set. */
 val GRID_COLUMNS = 2..5
 const val DEFAULT_GRID_COLUMNS = 3
@@ -42,6 +46,8 @@ object AppSettings {
     private const val KEY_GRID_COLUMNS = "grid_columns"
     private const val KEY_ITEM_ORDER = "item_order"
     private const val KEY_VIDEO_PLAYER = "video_player"
+    private const val KEY_SLIDE_SECONDS = "slide_seconds"
+    private const val KEY_SENSOR_ROTATION = "sensor_rotation"
 
     private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
@@ -66,6 +72,18 @@ object AppSettings {
     private val _videoPlayer = MutableStateFlow(VideoPlayer.BUILT_IN)
     val videoPlayer: StateFlow<VideoPlayer> = _videoPlayer.asStateFlow()
 
+    /** How long each photo of a slideshow stays up; one of [SLIDE_SECONDS]. */
+    private val _slideSeconds = MutableStateFlow(DEFAULT_SLIDE_SECONDS)
+    val slideSeconds: StateFlow<Int> = _slideSeconds.asStateFlow()
+
+    /**
+     * Whether photos, videos and the slideshow turn with the phone, by the
+     * sensor and whatever the system's auto-rotate says; the rest of the app
+     * stays in the device's own orientation either way.
+     */
+    private val _sensorRotation = MutableStateFlow(true)
+    val sensorRotation: StateFlow<Boolean> = _sensorRotation.asStateFlow()
+
     fun load(context: Context) {
         val prefs = prefs(context)
         _themeMode.value = enumOr(prefs.getString(KEY_THEME, null), ThemeMode.SYSTEM)
@@ -75,6 +93,9 @@ object AppSettings {
         _gridColumns.value = prefs.getInt(KEY_GRID_COLUMNS, DEFAULT_GRID_COLUMNS).coerceIn(GRID_COLUMNS)
         _itemOrder.value = enumOr(prefs.getString(KEY_ITEM_ORDER, null), ItemOrder.DATE)
         _videoPlayer.value = enumOr(prefs.getString(KEY_VIDEO_PLAYER, null), VideoPlayer.BUILT_IN)
+        _slideSeconds.value = prefs.getInt(KEY_SLIDE_SECONDS, DEFAULT_SLIDE_SECONDS).takeIf { it in SLIDE_SECONDS }
+            ?: DEFAULT_SLIDE_SECONDS
+        _sensorRotation.value = prefs.getBoolean(KEY_SENSOR_ROTATION, true)
     }
 
     fun setThemeMode(context: Context, mode: ThemeMode) {
@@ -112,6 +133,17 @@ object AppSettings {
     fun setVideoPlayer(context: Context, player: VideoPlayer) {
         _videoPlayer.value = player
         prefs(context).edit { putString(KEY_VIDEO_PLAYER, player.name) }
+    }
+
+    fun setSlideSeconds(context: Context, seconds: Int) {
+        if (seconds !in SLIDE_SECONDS) return
+        _slideSeconds.value = seconds
+        prefs(context).edit { putInt(KEY_SLIDE_SECONDS, seconds) }
+    }
+
+    fun setSensorRotation(context: Context, enabled: Boolean) {
+        _sensorRotation.value = enabled
+        prefs(context).edit { putBoolean(KEY_SENSOR_ROTATION, enabled) }
     }
 
     /** The album open last, kept across launches. Null before one was ever opened. */

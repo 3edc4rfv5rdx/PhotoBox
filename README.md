@@ -27,8 +27,18 @@ Work in progress, built to `TZ.md`.
 - **Viewer**: a tap on a thumbnail opens it full screen, in the grid's order.
   Swipe to the next or previous file; pinch or double-tap to zoom, and drag
   while zoomed. A tap hides or shows the bar on top. A video shows a still
-  with a play button: it plays in PhotoBox's own player, or in another app
-  with "Video player" set to that in Settings.
+  with a play button: it plays in PhotoBox's own player — play and pause, the
+  time and a seek bar, hidden and shown by a tap — or in another app with
+  "Video player" set to that in Settings.
+- **Turning**: the app stays in the device's own orientation — portrait on a
+  phone, landscape on a TV box — and photos, videos and the slideshow
+  turn with the phone by its sensor, whatever the system's auto-rotate says;
+  with the phone on its side, a swipe still runs along the photo. A switch in
+  Settings keeps them upright instead.
+- **Slideshow**: ⋮ → Slideshow goes through the album's photos in the grid's
+  order, round and round, each fading into the next; videos are passed over.
+  Each photo stays up for the time set in Settings, 5 seconds unless changed.
+  The screen stays on and the system bars are hidden; a tap or Back ends it.
 - **Folder access**: PhotoBox reads files directly and needs "All files access".
 
 ## Install

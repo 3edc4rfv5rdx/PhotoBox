@@ -86,3 +86,27 @@ val Icons.AutoMirrored.Filled.Sort: ImageVector
     }
 
 private var _sort: ImageVector? = null
+
+val Icons.Filled.Pause: ImageVector
+    get() {
+        if (_pause != null) return _pause!!
+        _pause = materialIcon(name = "Filled.Pause") {
+            materialPath {
+                moveTo(6.0f, 19.0f)
+                horizontalLineToRelative(4.0f)
+                lineTo(10.0f, 5.0f)
+                lineTo(6.0f, 5.0f)
+                verticalLineToRelative(14.0f)
+                close()
+                moveTo(14.0f, 5.0f)
+                verticalLineToRelative(14.0f)
+                horizontalLineToRelative(4.0f)
+                lineTo(18.0f, 5.0f)
+                horizontalLineToRelative(-4.0f)
+                close()
+            }
+        }
+        return _pause!!
+    }
+
+private var _pause: ImageVector? = null

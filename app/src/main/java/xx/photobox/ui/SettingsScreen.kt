@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import dev.updater.Updater
 import xx.photobox.AppSettings
 import xx.photobox.R
+import xx.photobox.SLIDE_SECONDS
 import xx.photobox.ThemeMode
 import xx.photobox.VideoPlayer
 import xx.photobox.currentLanguageTag
@@ -38,9 +39,9 @@ import xx.photobox.setLanguageTag
 import xx.photobox.supportedLanguages
 
 /** Which editor is open; only one can be at a time. */
-private enum class Editing { NONE, THEME, ACCENT, LANGUAGE, PLAYER }
+private enum class Editing { NONE, THEME, ACCENT, LANGUAGE, PLAYER, SLIDE }
 
-/** Theme, accent colour, language, the start-up update check, whether hidden albums are listed and the video player. */
+/** Theme, accent colour, language, the start-up update check, whether hidden albums are listed, the video player, the slideshow's pace and turning by the sensor. */
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -49,6 +50,8 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     val accentIndex by AppSettings.accentIndex.collectAsState()
     val showHidden by AppSettings.showHidden.collectAsState()
     val videoPlayer by AppSettings.videoPlayer.collectAsState()
+    val slideSeconds by AppSettings.slideSeconds.collectAsState()
+    val sensorRotation by AppSettings.sensorRotation.collectAsState()
 
     val systemLabel = stringResource(R.string.language_system)
     val languages = remember(context, systemLabel) { supportedLanguages(context, systemLabel) }
@@ -96,12 +99,22 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             Updater.setEnabled(context, it)
         }
         HorizontalDivider()
+        SwitchRow(stringResource(R.string.setting_sensor_rotation), sensorRotation) {
+            AppSettings.setSensorRotation(context, it)
+        }
+        HorizontalDivider()
         SwitchRow(stringResource(R.string.setting_show_hidden), showHidden) { AppSettings.setShowHidden(context, it) }
         HorizontalDivider()
         SettingRow(
             label = stringResource(R.string.setting_video_player),
             value = stringResource(videoPlayer.labelRes()),
             onClick = { editing = Editing.PLAYER },
+        )
+        HorizontalDivider()
+        SettingRow(
+            label = stringResource(R.string.setting_slide_time),
+            value = stringResource(R.string.seconds_short, slideSeconds),
+            onClick = { editing = Editing.SLIDE },
         )
     }
 
@@ -155,6 +168,18 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             onDismiss = { editing = Editing.NONE },
             onPick = {
                 AppSettings.setVideoPlayer(context, it)
+                editing = Editing.NONE
+            },
+        )
+
+        Editing.SLIDE -> ChoiceDialog(
+            title = stringResource(R.string.setting_slide_time),
+            options = SLIDE_SECONDS,
+            selected = slideSeconds,
+            label = { stringResource(R.string.seconds_short, it) },
+            onDismiss = { editing = Editing.NONE },
+            onPick = {
+                AppSettings.setSlideSeconds(context, it)
                 editing = Editing.NONE
             },
         )
