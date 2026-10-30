@@ -56,9 +56,13 @@ private val thumbnailDispatcher = Dispatchers.IO.limitedParallelism(3)
 
 /** Decoded thumbnails by size and path, bounded by bytes, so scrolling back or
  * reopening a list shows them at once. */
-private val thumbnailCache = object : LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / 16).toInt()) {
-    override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
-}
+private val thumbnailCache = bitmapCache(memoryShare = 16)
+
+/** Decoded bitmaps by key, bounded by bytes to one [memoryShare]-th of what the app may use. */
+internal fun bitmapCache(memoryShare: Int): LruCache<String, Bitmap> =
+    object : LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / memoryShare).toInt()) {
+        override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
+    }
 
 /** A square preview of the photo or video at [path], decoded to about [maxDimension] pixels a side. */
 @Composable
@@ -141,7 +145,7 @@ private fun videoFrame(path: String, maxDimension: Int, signal: CancellationSign
  * call that checks it gives up early instead of finishing for nobody.
  * [BitmapFactory] has no such hook; a video still does.
  */
-private suspend fun <T> withCancellationSignal(block: (CancellationSignal) -> T): T = coroutineScope {
+internal suspend fun <T> withCancellationSignal(block: (CancellationSignal) -> T): T = coroutineScope {
     val signal = CancellationSignal()
     // Unconfined and undispatched: the cancel runs on whichever thread cancels
     // this coroutine, not queued behind the very call it is meant to stop on a
@@ -165,7 +169,7 @@ private suspend fun <T> withCancellationSignal(block: (CancellationSignal) -> T)
  * smaller than [maxDimension] on a side, or, with [fit], no larger — a quarter
  * of the memory for a full-screen photo, and a quarter of the time.
  */
-private fun decodeSampled(path: String, maxDimension: Int, signal: CancellationSignal, fit: Boolean = false): Bitmap? {
+internal fun decodeSampled(path: String, maxDimension: Int, signal: CancellationSignal, fit: Boolean = false): Bitmap? {
     if (isVideo(path)) return videoFrame(path, maxDimension, signal)
     val bounds = decodeBounds(path)
     if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null

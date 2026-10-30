@@ -2,7 +2,6 @@ package xx.photobox.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,7 +13,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
@@ -61,12 +59,7 @@ fun AlbumsScreen(
     }
     Column(modifier.fillMaxSize()) {
         when {
-            shown == null -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator()
-                    Text(stringResource(R.string.albums_scanning), Modifier.padding(top = 16.dp))
-                }
-            }
+            shown == null -> ProgressState(stringResource(R.string.albums_scanning))
 
             else -> {
                 if (scanning) LinearProgressIndicator(Modifier.fillMaxWidth())

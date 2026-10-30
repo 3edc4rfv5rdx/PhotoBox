@@ -81,4 +81,15 @@ class AlbumItemsTest {
         assertNull(cache.get(File("/a/x.jpg"), modified = 1, size = 2))
         assertEquals(3L, cache.get(File("/a/y.jpg"), modified = 1, size = 2))
     }
+
+    @Test
+    fun sameItemsIgnoresOrderButNotDatesSizesOrFiles() {
+        val a = item("a.jpg", taken = 1, size = 2)
+        val b = item("b.jpg", taken = 3, size = 4)
+        assertTrue(sameItems(listOf(a, b), listOf(item("b.jpg", 3, 4), item("a.jpg", 1, 2))))
+        assertTrue(!sameItems(null, listOf(a)))
+        assertTrue(!sameItems(listOf(a, b), listOf(a)))
+        assertTrue(!sameItems(listOf(a, b), listOf(a, item("b.jpg", 3, 5))))
+        assertTrue(!sameItems(listOf(a, b), listOf(a, item("c.jpg", 3, 4))))
+    }
 }

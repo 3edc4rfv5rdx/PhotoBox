@@ -24,6 +24,10 @@ Work in progress, built to `TZ.md`.
   through it, showing the month, letter or size it has reached. The date is
   when the photo or video was taken, from its EXIF or container, else the
   file's own time; it is read once and cached.
+- **Viewer**: a tap on a thumbnail opens it full screen, in the grid's order.
+  Swipe to the next or previous file; pinch or double-tap to zoom, and drag
+  while zoomed. A tap hides or shows the bar on top. A video shows a still
+  with a play button that opens it in the phone's own player.
 - **Folder access**: PhotoBox reads files directly and needs "All files access".
 
 ## Install

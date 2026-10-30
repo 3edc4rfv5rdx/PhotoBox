@@ -44,6 +44,9 @@
     <string name="album_empty">В этом альбоме нет фото и видео</string>
     <string name="reading_dates">Чтение дат %1$s из %2$s</string>
     <string name="order_size">Сначала большие</string>
+    <string name="photo_load_failed">Не удалось загрузить файл</string>
+    <string name="play_video">Воспроизвести видео</string>
+    <string name="no_video_player">Нет приложения для этого видео</string>
     <plurals name="file_count">
         <item quantity="one">%1$s файл</item>
         <item quantity="few">%1$s файла</item>

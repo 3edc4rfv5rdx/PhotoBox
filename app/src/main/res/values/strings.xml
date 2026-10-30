@@ -44,6 +44,9 @@
     <string name="album_empty">No photos or videos in this album</string>
     <string name="reading_dates">Reading dates %1$s of %2$s</string>
     <string name="order_size">Largest first</string>
+    <string name="photo_load_failed">Could not load this file</string>
+    <string name="play_video">Play video</string>
+    <string name="no_video_player">No app to play this video</string>
     <plurals name="file_count">
         <item quantity="one">%1$s file</item>
         <item quantity="other">%1$s files</item>

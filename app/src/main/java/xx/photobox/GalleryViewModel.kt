@@ -18,6 +18,13 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
+/** Whether [old] and [new] hold the same files, with the same dates and sizes, in any order. */
+internal fun sameItems(old: List<MediaItem>?, new: List<MediaItem>): Boolean {
+    if (old == null || old.size != new.size) return false
+    val byPath = old.associateBy { it.file.path }
+    return new.all { item -> byPath[item.file.path]?.let { it.taken == item.taken && it.size == item.size } == true }
+}
+
 /** EXIF reads run a few at a time: enough to overlap the waits on storage, not so many they fight over it. */
 private val dateReader = Dispatchers.IO.limitedParallelism(4)
 
@@ -146,7 +153,10 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
                 }.awaitAll()
             }
             ticker.cancel()
-            items = known + read
+            val loaded = known + read
+            // The same files as before keep the same list, so nothing built
+            // on it — the sorted grid, the open viewer — starts over for nothing.
+            if (!sameItems(items, loaded)) items = loaded
             datesTotal = 0
             if (read.isNotEmpty()) withContext(Dispatchers.IO) { dateCache.save() }
         }

@@ -34,6 +34,18 @@
             </intent-filter>
         </activity>
 
+        <!-- Hands a file to another app — a video to play: a plain path of
+             ours is not readable from elsewhere. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.files"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <!-- Hands the updater's downloaded APK to the system installer. -->
         <provider
             android:name="dev.updater.UpdaterFileProvider"

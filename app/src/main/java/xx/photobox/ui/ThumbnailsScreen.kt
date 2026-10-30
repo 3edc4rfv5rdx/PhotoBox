@@ -3,19 +3,17 @@ package xx.photobox.ui
 import android.content.Context
 import android.text.format.DateUtils
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -27,8 +25,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -59,7 +55,6 @@ import xx.photobox.ItemOrder
 import xx.photobox.MediaItem
 import xx.photobox.R
 import xx.photobox.gridEntries
-import xx.photobox.sortItems
 import java.time.LocalDate
 import java.time.ZoneId
 import kotlin.math.roundToInt
@@ -78,47 +73,40 @@ private val SCROLLER_THUMB_HEIGHT = 48.dp
 private val SCROLLER_THUMB_WIDTH = 6.dp
 
 /**
- * The open album as a grid of [columns] thumbnails, in [order], with a day
+ * The open album as a grid of [columns] thumbnails, [sorted] in [order], with a day
  * heading over each day's files in date order. A pinch changes the column
  * count through [onColumns]; one finger scrolls, and a long grid gets a bar on
  * the right edge to drag through it, labelled with where the drag has got to.
  */
 @Composable
 fun ThumbnailsScreen(
-    items: List<MediaItem>?,
+    sorted: List<MediaItem>?,
     datesDone: Int,
     datesTotal: Int,
     order: ItemOrder,
     columns: Int,
     onColumns: (Int) -> Unit,
+    onOpen: (MediaItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (items == null) {
-        Column(modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Spacer(Modifier.weight(1f))
-            if (datesTotal > 0) {
-                LinearProgressIndicator(
-                    progress = { datesDone.toFloat() / datesTotal },
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 32.dp),
-                )
-                Text(
-                    stringResource(R.string.reading_dates, formatCount(datesDone), formatCount(datesTotal)),
-                    Modifier.padding(top = 16.dp),
-                )
-            } else {
-                CircularProgressIndicator()
-            }
-            Spacer(Modifier.weight(1f))
+    if (sorted == null) {
+        if (datesTotal > 0) {
+            ProgressState(
+                text = stringResource(R.string.reading_dates, formatCount(datesDone), formatCount(datesTotal)),
+                progress = { datesDone.toFloat() / datesTotal },
+            )
+        } else {
+            ProgressState(text = null)
         }
         return
     }
-    if (items.isEmpty()) {
+    if (sorted.isEmpty()) {
         EmptyState(icon = null, title = stringResource(R.string.album_empty))
         return
     }
 
     val context = LocalContext.current
-    val entries = remember(items, order) { gridEntries(sortItems(items, order), order) }
+    val entries = remember(sorted, order) { gridEntries(sorted, order) }
     val gridState = rememberLazyGridState()
 
     val currentColumns by rememberUpdatedState(columns)
@@ -166,7 +154,10 @@ fun ThumbnailsScreen(
                         path = entry.item.file.path,
                         maxDimension = decodeSize,
                         corner = CELL_CORNER,
-                        modifier = Modifier.padding(CELL_GAP / 2).aspectRatio(1f),
+                        modifier = Modifier
+                            .padding(CELL_GAP / 2)
+                            .aspectRatio(1f)
+                            .clickable { onOpen(entry.item) },
                     )
                 }
             }

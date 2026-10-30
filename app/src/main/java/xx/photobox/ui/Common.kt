@@ -33,6 +33,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilledTonalButton
@@ -145,12 +147,29 @@ fun formatCount(n: Int): String = NumberFormat.getIntegerInstance().format(n)
 val LARGE_BUTTON = 48.dp
 val LARGE_ICON = 28.dp
 
+/** Every icon button in a top bar: [LARGE_BUTTON] with a [LARGE_ICON] glyph. Without a
+ * [tint] the glyph takes the content colour, which also dims it while disabled. */
+@Composable
+fun LargeIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    tint: Color? = null,
+) {
+    IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(LARGE_BUTTON)) {
+        if (tint == null) {
+            Icon(icon, contentDescription, Modifier.size(LARGE_ICON))
+        } else {
+            Icon(icon, contentDescription, Modifier.size(LARGE_ICON), tint = tint)
+        }
+    }
+}
+
 /** The ⋮ button that opens an [AppMenu]. */
 @Composable
 fun MoreButton(onClick: () -> Unit, enabled: Boolean = true) {
-    IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(LARGE_BUTTON)) {
-        Icon(Icons.Filled.MoreVert, stringResource(R.string.more_options), Modifier.size(LARGE_ICON))
-    }
+    LargeIconButton(Icons.Filled.MoreVert, stringResource(R.string.more_options), onClick, enabled)
 }
 
 // ---------- Dialog pieces ----------
@@ -274,6 +293,26 @@ fun AppScreen(
             actions()
         }
         content()
+    }
+}
+
+/**
+ * Work under way, in the middle of [modifier]'s space: a bar when its
+ * [progress] is known, a spinner when not, and [text] under either.
+ */
+@Composable
+fun ProgressState(text: String?, modifier: Modifier = Modifier.fillMaxSize(), progress: (() -> Float)? = null) {
+    Column(
+        modifier.padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        if (progress != null) {
+            LinearProgressIndicator(progress = progress, modifier = Modifier.fillMaxWidth())
+        } else {
+            CircularProgressIndicator()
+        }
+        if (text != null) Text(text, Modifier.padding(top = 16.dp))
     }
 }
 

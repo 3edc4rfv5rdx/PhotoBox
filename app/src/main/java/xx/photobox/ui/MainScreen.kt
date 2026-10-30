@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
@@ -16,8 +15,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Button
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,6 +37,7 @@ import xx.photobox.AppSettings
 import xx.photobox.GalleryViewModel
 import xx.photobox.ItemOrder
 import xx.photobox.R
+import xx.photobox.sortItems
 
 /** The screens besides the album's thumbnails, each opened from the ⋮ menu or the title. */
 private enum class Screen { THUMBNAILS, ALBUMS, NEW_ALBUM_PARENT, TRASH, SETTINGS }
@@ -72,6 +70,11 @@ fun MainScreen(
     var menuOpen by remember { mutableStateOf(false) }
     var choosingOrder by remember { mutableStateOf(false) }
     var choosingItemOrder by remember { mutableStateOf(false) }
+    // The file open full screen, by path: the list under it can be reloaded
+    // and shift every index, but the file stays the one it was.
+    var viewerPath by rememberSaveable { mutableStateOf<String?>(null) }
+    val items = vm.items
+    val sorted = remember(items, itemOrder) { items?.let { sortItems(it, itemOrder) } }
     val backToThumbnails = { screen = Screen.THUMBNAILS }
 
     LaunchedEffect(screen) {
@@ -85,12 +88,8 @@ fun MainScreen(
                 title = stringResource(R.string.albums),
                 onBack = backToThumbnails,
                 actions = {
-                    IconButton(onClick = { choosingOrder = true }, modifier = Modifier.size(LARGE_BUTTON)) {
-                        Icon(Icons.AutoMirrored.Filled.Sort, stringResource(R.string.sort), Modifier.size(LARGE_ICON))
-                    }
-                    IconButton(onClick = vm::startDraft, modifier = Modifier.size(LARGE_BUTTON)) {
-                        Icon(Icons.Filled.Add, stringResource(R.string.new_album), Modifier.size(LARGE_ICON))
-                    }
+                    LargeIconButton(Icons.AutoMirrored.Filled.Sort, stringResource(R.string.sort), { choosingOrder = true })
+                    LargeIconButton(Icons.Filled.Add, stringResource(R.string.new_album), vm::startDraft)
                 },
             ) {
                 AlbumsScreen(
@@ -129,83 +128,97 @@ fun MainScreen(
                 title = stringResource(R.string.settings),
                 onBack = backToThumbnails,
                 actions = {
-                    IconButton(onClick = onAbout, modifier = Modifier.size(LARGE_BUTTON)) {
-                        Icon(Icons.Outlined.Info, stringResource(R.string.about), Modifier.size(LARGE_ICON))
-                    }
+                    LargeIconButton(Icons.Outlined.Info, stringResource(R.string.about), onAbout)
                 },
             ) {
                 SettingsScreen(modifier = Modifier.weight(1f))
             }
 
-            Screen.THUMBNAILS -> Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
-                Row(
-                    Modifier.fillMaxWidth().padding(horizontal = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(onClick = onExit, modifier = Modifier.size(LARGE_BUTTON)) {
-                        Icon(Icons.Filled.Close, stringResource(R.string.exit), Modifier.size(LARGE_ICON))
-                    }
-                    // The quick way to another album.
-                    Text(
-                        text = vm.album?.name ?: stringResource(R.string.app_name),
-                        style = MaterialTheme.typography.titleLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable(enabled = vm.hasStorageAccess) { screen = Screen.ALBUMS }
-                            .padding(horizontal = 8.dp, vertical = 12.dp),
-                    )
-                    Box {
-                        MoreButton(onClick = { menuOpen = true })
-                        AppMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                            AppMenuItem(stringResource(R.string.albums), enabled = vm.hasStorageAccess) {
-                                menuOpen = false
-                                screen = Screen.ALBUMS
-                            }
-                            AppMenuItem(stringResource(R.string.trash), enabled = vm.hasStorageAccess) {
-                                menuOpen = false
-                                screen = Screen.TRASH
-                            }
-                            AppMenuItem(stringResource(R.string.sort), enabled = vm.album != null) {
-                                menuOpen = false
-                                choosingItemOrder = true
-                            }
-                            // Runs through the open album once the viewer is in.
-                            AppMenuItem(stringResource(R.string.slideshow), enabled = false) {
-                                menuOpen = false
-                            }
-                            AppMenuItem(stringResource(R.string.settings)) {
-                                menuOpen = false
-                                screen = Screen.SETTINGS
+            Screen.THUMBNAILS -> Box(Modifier.fillMaxSize()) {
+                Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.systemBars)) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        LargeIconButton(Icons.Filled.Close, stringResource(R.string.exit), onExit)
+                        // The quick way to another album.
+                        Text(
+                            text = vm.album?.name ?: stringResource(R.string.app_name),
+                            style = MaterialTheme.typography.titleLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable(enabled = vm.hasStorageAccess) { screen = Screen.ALBUMS }
+                                .padding(horizontal = 8.dp, vertical = 12.dp),
+                        )
+                        Box {
+                            MoreButton(onClick = { menuOpen = true })
+                            AppMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                                AppMenuItem(stringResource(R.string.albums), enabled = vm.hasStorageAccess) {
+                                    menuOpen = false
+                                    screen = Screen.ALBUMS
+                                }
+                                AppMenuItem(stringResource(R.string.trash), enabled = vm.hasStorageAccess) {
+                                    menuOpen = false
+                                    screen = Screen.TRASH
+                                }
+                                AppMenuItem(stringResource(R.string.sort), enabled = vm.album != null) {
+                                    menuOpen = false
+                                    choosingItemOrder = true
+                                }
+                                // Runs through the open album once the viewer is in.
+                                AppMenuItem(stringResource(R.string.slideshow), enabled = false) {
+                                    menuOpen = false
+                                }
+                                AppMenuItem(stringResource(R.string.settings)) {
+                                    menuOpen = false
+                                    screen = Screen.SETTINGS
+                                }
                             }
                         }
                     }
+                    when {
+                        !vm.hasStorageAccess -> EmptyState(
+                            icon = null,
+                            title = stringResource(R.string.need_storage_access),
+                            message = stringResource(R.string.need_storage_access_hint),
+                            action = { Button(onClick = onGrantAccess) { Text(stringResource(R.string.grant_access)) } },
+                        )
+
+                        vm.album == null -> EmptyState(
+                            icon = null,
+                            title = stringResource(R.string.no_album_open),
+                            action = { Button(onClick = { screen = Screen.ALBUMS }) { Text(stringResource(R.string.albums)) } },
+                        )
+
+                        // Keyed by the album, so another one opens scrolled to its top.
+                        else -> key(vm.album) {
+                            ThumbnailsScreen(
+                                sorted = sorted,
+                                datesDone = vm.datesDone,
+                                datesTotal = vm.datesTotal,
+                                order = itemOrder,
+                                columns = gridColumns,
+                                onColumns = { AppSettings.setGridColumns(context, it) },
+                                onOpen = { viewerPath = it.file.path },
+                                modifier = Modifier.weight(1f),
+                            )
+                        }
+                    }
                 }
-                when {
-                    !vm.hasStorageAccess -> EmptyState(
-                        icon = null,
-                        title = stringResource(R.string.need_storage_access),
-                        message = stringResource(R.string.need_storage_access_hint),
-                        action = { Button(onClick = onGrantAccess) { Text(stringResource(R.string.grant_access)) } },
-                    )
-
-                    vm.album == null -> EmptyState(
-                        icon = null,
-                        title = stringResource(R.string.no_album_open),
-                        action = { Button(onClick = { screen = Screen.ALBUMS }) { Text(stringResource(R.string.albums)) } },
-                    )
-
-                    // Keyed by the album, so another one opens scrolled to its top.
-                    else -> key(vm.album) {
-                        ThumbnailsScreen(
-                            items = vm.items,
-                            datesDone = vm.datesDone,
-                            datesTotal = vm.datesTotal,
-                            order = itemOrder,
-                            columns = gridColumns,
-                            onColumns = { AppSettings.setGridColumns(context, it) },
-                            modifier = Modifier.weight(1f),
+                // Over the grid, not in its place, so the grid keeps where it
+                // was scrolled to for when the viewer closes.
+                val open = viewerPath
+                if (open != null && !sorted.isNullOrEmpty() && vm.album != null) {
+                    // A reloaded list can put another file at the same index:
+                    // the viewer starts over on the file it was showing.
+                    key(sorted) {
+                        ViewerScreen(
+                            sorted = sorted,
+                            startPath = open,
+                            onPage = { viewerPath = it },
+                            onClose = { viewerPath = null },
                         )
                     }
                 }
