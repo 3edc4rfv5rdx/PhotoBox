@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.systemBars
@@ -37,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
@@ -56,20 +58,26 @@ private val CONTROLS_CORNER = 28.dp
 /** How long the controls stay up after the last touch. */
 private const val CONTROLS_SHOWN_MS = 3000L
 
+/** The app's icon over the last photo once the show has ended. */
+private val END_MARK = 160.dp
+private const val END_MARK_ALPHA = 0.85f
+
 /** One photo up on the slideshow. A class of its own, so the same file shown again still counts as a new slide. */
 private class Slide(val path: String, val bitmap: Bitmap)
 
 /**
- * [photos] one after another from [start], round and round, each held
- * [seconds] and faded into the next in the middle of the screen. The screen
+ * [photos] one after another from [start] to the last, each held [seconds]
+ * and faded into the next in the middle of the screen. After the last it
+ * stops: the app's icon goes up over that photo, the controls stay up, and
+ * Play starts it over from the first; [onEnded] hears it got there. The screen
  * stays on and the system bars are hidden while it runs. A tap shows the
  * controls — back to leave at the top; previous, info, pause or go on and
  * next in a block at the bottom — which hide again a few
  * seconds after the last touch; Back stops it too. Going on from a pause moves
  * to the next photo after [RESUME_WAIT_MS], not a whole [seconds]. Each photo put up is
  * reported to [onShown], so the next start can go on from it. A photo that
- * cannot be decoded is passed over in the direction being moved, and when
- * none can, it ends by itself.
+ * cannot be decoded is passed over in the direction being moved — forward
+ * when there is nothing left the other way — and when none can, it closes by itself.
  */
 @Composable
 fun SlideshowScreen(
@@ -77,6 +85,7 @@ fun SlideshowScreen(
     start: Int,
     seconds: Int,
     onShown: (String) -> Unit,
+    onEnded: () -> Unit,
     onClose: () -> Unit,
 ) {
     BackHandler(onBack = onClose)
@@ -85,6 +94,8 @@ fun SlideshowScreen(
     val rotation = rememberMediaRotation()
     var index by rememberSaveable { mutableIntStateOf(start.coerceIn(photos.indices)) }
     var paused by rememberSaveable { mutableStateOf(false) }
+    // Past the last photo: nothing moves on until Play starts over.
+    var ended by rememberSaveable { mutableStateOf(false) }
     // The photo whose info is open; the show waits while it is.
     var info by remember { mutableStateOf<String?>(null) }
     // Just gone on from a pause: the photo up has been looked at long enough already.
@@ -99,11 +110,31 @@ fun SlideshowScreen(
     val currentSeconds by rememberUpdatedState(seconds)
     val currentOnShown by rememberUpdatedState(onShown)
     val currentOnClose by rememberUpdatedState(onClose)
+    val currentOnEnded by rememberUpdatedState(onEnded)
 
+    fun end() {
+        ended = true
+        controls = true
+        currentOnEnded()
+    }
+
+    // Forward past the last photo ends the show; back from the first stays on it.
     fun move(by: Int) {
         resuming = false
         step = by
-        index = Math.floorMod(index + by, photos.size)
+        ended = false
+        when {
+            index + by > photos.lastIndex -> end()
+            else -> index = (index + by).coerceAtLeast(0)
+        }
+    }
+
+    fun startOver() {
+        resuming = false
+        paused = false
+        ended = false
+        step = 1
+        index = 0
     }
 
     // Puts up the photo at index, or passes it over.
@@ -117,7 +148,12 @@ fun SlideshowScreen(
         val bitmap = loadPhoto(path).await()
         if (bitmap == null) {
             failedInARow++
-            if (failedInARow >= photos.size) currentOnClose() else move(step)
+            when {
+                failedInARow >= photos.size -> currentOnClose()
+                // Nothing further back to pass over to.
+                step < 0 && index == 0 -> move(1)
+                else -> move(step)
+            }
             return@LaunchedEffect
         }
         failedInARow = 0
@@ -125,19 +161,20 @@ fun SlideshowScreen(
         if (shown?.path != path) shown = Slide(path, bitmap)
         currentOnShown(path)
         // Read ahead while this one is up, so the fade does not wait on a decode.
-        loadPhoto(photos[Math.floorMod(index + step, photos.size)].file.path)
+        photos.getOrNull(index + step)?.let { loadPhoto(it.file.path) }
     }
     // Holds the photo up, then moves on; a move by hand, a pause or a new photo
     // starts it over. Not while the photo moved to is still being read: the
     // one still up would otherwise move the show on a second time.
-    LaunchedEffect(shown, index, paused, info) {
-        if (paused || info != null || shown == null || shown?.path != photos.getOrNull(index)?.file?.path) return@LaunchedEffect
+    LaunchedEffect(shown, index, paused, info, ended) {
+        if (ended || paused || info != null || shown == null || shown?.path != photos.getOrNull(index)?.file?.path) return@LaunchedEffect
         val hold = currentSeconds * 1000L
         delay(if (resuming) minOf(hold, RESUME_WAIT_MS) else hold)
         move(1)
     }
-    LaunchedEffect(controls, touched, info) {
-        if (!controls || info != null) return@LaunchedEffect
+    // At the end they stay: there is nothing else to look at.
+    LaunchedEffect(controls, touched, info, ended) {
+        if (!controls || info != null || ended) return@LaunchedEffect
         delay(CONTROLS_SHOWN_MS)
         controls = false
     }
@@ -163,6 +200,14 @@ fun SlideshowScreen(
                         CircularProgressIndicator(color = Color.White)
                     }
                 }
+            }
+            if (ended) {
+                Image(
+                    painterResource(R.drawable.ic_launcher_foreground),
+                    contentDescription = null,
+                    alpha = END_MARK_ALPHA,
+                    modifier = Modifier.align(Alignment.Center).size(END_MARK),
+                )
             }
         }
 
@@ -205,11 +250,21 @@ fun SlideshowScreen(
                     )
                     Spacer(Modifier.width(CONTROLS_MIDDLE_GAP))
                     LargeIconButton(
-                        if (paused) Icons.Filled.PlayArrow else Icons.Filled.Pause,
-                        stringResource(if (paused) R.string.slideshow_resume else R.string.pause),
+                        if (paused || ended) Icons.Filled.PlayArrow else Icons.Filled.Pause,
+                        stringResource(
+                            when {
+                                ended -> R.string.slideshow_from_start
+                                paused -> R.string.slideshow_resume
+                                else -> R.string.pause
+                            },
+                        ),
                         touch {
-                            resuming = paused
-                            paused = !paused
+                            if (ended) {
+                                startOver()
+                            } else {
+                                resuming = paused
+                                paused = !paused
+                            }
                         },
                         tint = Color.White,
                     )

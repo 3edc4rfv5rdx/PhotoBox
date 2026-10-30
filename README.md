@@ -72,7 +72,9 @@ Work in progress, built to `TZ.md`.
   with the phone on its side, a swipe still runs along the photo. Settings
   can make them turn only while the system's auto-rotate is on, or never.
 - **Slideshow**: ⋮ → Slideshow goes through the album's photos in the grid's
-  order, round and round, each fading into the next; videos are passed over.
+  order, each fading into the next; videos are passed over. After the last
+  one it stops with the app's icon over it and the controls up; Play starts
+  it over.
   Each photo stays up for the time set in Settings with a slider, 1 to 30
   seconds, 5 unless changed.
   The screen stays on and the system bars are hidden. A tap shows the
@@ -80,7 +82,8 @@ Work in progress, built to `TZ.md`.
   block at the bottom — which hide again after
   a few seconds; Back stops it too. After a pause it moves on 3 seconds after
   Go on. Started again in the album the last slideshow ran in, it asks
-  whether to go on from the photo it stopped on or begin from the start.
+  whether to go on from the photo it stopped on or begin from the start —
+  unless it was seen to the end.
 - **Folder access**: PhotoBox reads files directly and needs "All files access".
 
 ## Install

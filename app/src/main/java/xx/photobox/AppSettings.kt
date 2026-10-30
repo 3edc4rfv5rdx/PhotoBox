@@ -233,6 +233,14 @@ object AppSettings {
         }
     }
 
+    /** Forgets the last slideshow's place: it was seen to the end, nothing is left to go on with. */
+    fun clearSlideshowFrame(context: Context) {
+        prefs(context).edit {
+            remove(KEY_SLIDESHOW_ALBUM)
+            remove(KEY_SLIDESHOW_PHOTO)
+        }
+    }
+
     /**
      * The per-app language below API 33, where the platform does not keep one.
      * Read straight from the file: it is needed while the activity attaches,

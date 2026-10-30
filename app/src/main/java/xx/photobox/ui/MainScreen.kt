@@ -473,6 +473,7 @@ fun MainScreen(
                         start = start,
                         seconds = slideSeconds,
                         onShown = { path -> vm.album?.let { AppSettings.setSlideshowFrame(context, it, path) } },
+                        onEnded = { AppSettings.clearSlideshowFrame(context) },
                         onClose = { slideshowStart = null },
                     )
                 }
