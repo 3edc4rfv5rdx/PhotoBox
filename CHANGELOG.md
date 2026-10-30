@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A file opened from the trash shows its own name and folder in the bar and in Info, not the name it is kept under
 - F: The video player answers a remote: ← and → jump 10 seconds, OK plays or pauses
 - N: TV boxes: an Android TV launcher banner, a focus frame on thumbnails, and remote arrows and OK in the viewer and the slideshow
 - N: Other apps can pick photos and videos through PhotoBox, one by a tap or several with a long tap and ✓

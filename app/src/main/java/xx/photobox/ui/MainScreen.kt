@@ -105,6 +105,10 @@ fun MainScreen(
     val trashItems = remember(vm.trashEntries) {
         vm.trashEntries.orEmpty().map { MediaItem(it.file, it.deletedAt, it.size) }
     }
+    // Where each trashed file came from, by its path in the trash: what it is called.
+    val trashOriginals = remember(vm.trashEntries) {
+        vm.trashEntries.orEmpty().associate { it.file.path to it.original }
+    }
     val roots by AppSettings.roots.collectAsState()
     var choosingItemOrder by remember { mutableStateOf(false) }
     // The file open full screen, by path: the list under it can be reloaded
@@ -551,6 +555,7 @@ fun MainScreen(
                 onTransfer = null,
                 onDelete = null,
                 onClose = { trashViewerPath = null },
+                shownAs = { trashOriginals[it.file.path] ?: it.file },
             )
         }
     }

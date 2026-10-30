@@ -66,7 +66,8 @@ Work in progress, built to `TZ.md`.
   on the phone or the SD card, which other galleries pass by; the viewer moves
   on to the next one. ⋮ → Trash lists it all under how many files and how
   much room: what each is, where it goes back to and when it was deleted. A
-  tap opens one full screen, swiping through the trash; its ⋮ restores it or
+  tap opens one full screen under its own name, swiping through the trash;
+  its ⋮ restores it or
   deletes it for good. The bar on top restores or deletes everything, with
   progress. A file is deleted for good once it has been in the trash longer
   than set in Settings — 30 days unless changed — checked at each start.

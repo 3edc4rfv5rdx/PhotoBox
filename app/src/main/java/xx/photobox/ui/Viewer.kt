@@ -100,7 +100,8 @@ private val PLAY_ICON = 56.dp
  * it to another app through [onShare], turns it through [onRotate] when it
  * can be, renames it through [onRename], sends
  * it to another folder through [onTransfer] or to the trash through
- * [onDelete], when there are those. [onPage] hears each file settled on, so
+ * [onDelete], when there are those. A file is named in the bar and its info
+ * as [shownAs] says: a trashed one by where it came from. [onPage] hears each file settled on, so
  * the caller can open on it again after the list is reloaded.
  */
 @Composable
@@ -114,6 +115,7 @@ fun ViewerScreen(
     onTransfer: ((MediaItem, Transfer) -> Unit)?,
     onDelete: ((MediaItem) -> Unit)?,
     onClose: () -> Unit,
+    shownAs: (MediaItem) -> File = { it.file },
 ) {
     BackHandler(onBack = onClose)
     val start = sorted.indexOfFirst { it.file.path == startPath }.coerceAtLeast(0)
@@ -204,7 +206,7 @@ fun ViewerScreen(
             ) {
                 LargeIconButton(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.back), onClose, tint = Color.White)
                 Text(
-                    current?.file?.name.orEmpty(),
+                    current?.let(shownAs)?.name.orEmpty(),
                     color = Color.White,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
@@ -264,7 +266,10 @@ fun ViewerScreen(
         }
 
         playing?.let { VideoPlayerScreen(it, onClose = { playing = null }) }
-        info?.let { InfoDialog(File(it), onDismiss = { info = null }) }
+        info?.let { path ->
+            val item = sorted.firstOrNull { it.file.path == path }
+            InfoDialog(File(path), onDismiss = { info = null }, shownAs = item?.let(shownAs) ?: File(path))
+        }
     }
 }
 

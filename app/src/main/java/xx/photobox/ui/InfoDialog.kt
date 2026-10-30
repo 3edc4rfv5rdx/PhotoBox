@@ -33,13 +33,15 @@ import java.io.File
 import java.util.Locale
 
 /**
- * What there is to know about [file]: its name and folder, size, picture
+ * What there is to know about [file]: its name and folder — those of
+ * [shownAs], where it is known by another, as a trashed file by where it came
+ * from — size, picture
  * size, when it was taken and changed, the camera and its settings, and the
  * place, which opens in a map app when tapped. Lines the file says nothing
  * about are left out.
  */
 @Composable
-fun InfoDialog(file: File, onDismiss: () -> Unit) {
+fun InfoDialog(file: File, onDismiss: () -> Unit, shownAs: File = file) {
     val context = LocalContext.current
     val info by produceState<FileInfo?>(initialValue = null, key1 = file) {
         value = withContext(Dispatchers.IO) { readFileInfo(file) }
@@ -56,8 +58,8 @@ fun InfoDialog(file: File, onDismiss: () -> Unit) {
                     Modifier.verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    InfoLine(stringResource(R.string.info_name), i.file.name)
-                    InfoLine(stringResource(R.string.info_folder), i.file.parent.orEmpty())
+                    InfoLine(stringResource(R.string.info_name), shownAs.name)
+                    InfoLine(stringResource(R.string.info_folder), shownAs.parent.orEmpty())
                     InfoLine(stringResource(R.string.info_size), formatSize(context, i.size))
                     if (i.width != null && i.height != null) {
                         InfoLine(stringResource(R.string.info_resolution), "${i.width} × ${i.height}")
