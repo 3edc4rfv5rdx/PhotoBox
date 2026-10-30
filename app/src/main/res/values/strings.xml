@@ -133,4 +133,5 @@
     <string name="filter_nothing">Nothing matches the filter</string>
     <string name="filter_count">%1$s of %2$s</string>
     <string name="open_failed">Could not open the file</string>
+    <string name="pick_done">Done</string>
 </resources>

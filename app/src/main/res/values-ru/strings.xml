@@ -137,4 +137,5 @@
     <string name="filter_nothing">Под фильтр ничего не подходит</string>
     <string name="filter_count">%1$s из %2$s</string>
     <string name="open_failed">Не удалось открыть файл</string>
+    <string name="pick_done">Готово</string>
 </resources>

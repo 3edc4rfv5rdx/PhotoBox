@@ -1,6 +1,7 @@
 package xx.photobox
 
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -26,7 +27,10 @@ import xx.photobox.ui.MainScreen
 import xx.photobox.ui.PhotoBoxTheme
 import xx.photobox.ui.WindowDark
 import xx.photobox.ui.WindowLight
+import xx.photobox.ui.clipOf
+import xx.photobox.ui.contentUri
 import xx.photobox.ui.isDarkTheme
+import java.io.File
 
 // One description of this app's release, for the silent check at start-up and
 // the About dialog's button alike.
@@ -49,9 +53,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         AppSettings.load(this)
+        // Another app asking for files to be picked; null for the gallery itself.
+        val pick = PickRequest.from(intent)
         // Looks for a newer build in this app's own GitHub release and asks
-        // before it downloads anything.
-        Updater.checkOnStart(this, UPDATER_CONFIG)
+        // before it downloads anything — not while another app waits on a pick.
+        if (pick == null) Updater.checkOnStart(this, UPDATER_CONFIG)
         applyWindowTheme()
 
         setContent {
@@ -68,6 +74,8 @@ class MainActivity : ComponentActivity() {
                         onGrantAccess = { requestAllFilesAccess.launch(allFilesAccessIntent(this)) },
                         onExit = ::finish,
                         onAbout = ::showAbout,
+                        pick = pick,
+                        onPicked = ::returnPicked,
                     )
                 }
             }
@@ -95,6 +103,18 @@ class MainActivity : ComponentActivity() {
             SystemBarStyle.light(android.graphics.Color.TRANSPARENT, android.graphics.Color.TRANSPARENT)
         }
         enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+    }
+
+    /** Hands [files] back to the app that asked for them, readable through the app's FileProvider, and closes. */
+    private fun returnPicked(files: List<File>) {
+        if (files.isEmpty()) return
+        val uris = files.map { contentUri(this, it) }
+        val result = Intent()
+            .setData(uris[0])
+            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        result.clipData = clipOf(uris)
+        setResult(RESULT_OK, result)
+        finish()
     }
 
     private fun showAbout() {

@@ -18,6 +18,10 @@ internal fun contentUri(context: Context, file: File): Uri =
 internal fun mimeTypeOf(file: File, fallback: String): String =
     MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension.lowercase()) ?: fallback
 
+/** [uris] as a clip, which carries a read grant for every one of them, not only the first. */
+internal fun clipOf(uris: List<Uri>): ClipData =
+    ClipData.newRawUri(null, uris[0]).apply { uris.drop(1).forEach { addItem(ClipData.Item(it)) } }
+
 /**
  * Offers [files] to whichever app the user picks to send them with: one by
  * ACTION_SEND, more by ACTION_SEND_MULTIPLE. Their RAW companions stay
@@ -41,7 +45,7 @@ fun shareFiles(context: Context, files: List<File>) {
             .putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(uris))
     }
     // The read grant goes with the clip, not the extra: set here, the chooser hands it on to the app picked.
-    send.clipData = ClipData.newRawUri(null, uris[0]).apply { uris.drop(1).forEach { addItem(ClipData.Item(it)) } }
+    send.clipData = clipOf(uris)
     send.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     try {
         context.startActivity(Intent.createChooser(send, null))

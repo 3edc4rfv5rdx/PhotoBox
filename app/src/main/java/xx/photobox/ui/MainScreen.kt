@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Share
@@ -48,6 +49,7 @@ import xx.photobox.GalleryViewModel
 import xx.photobox.ItemFilter
 import xx.photobox.ItemOrder
 import xx.photobox.MediaItem
+import xx.photobox.PickRequest
 import xx.photobox.R
 import xx.photobox.Transfer
 import xx.photobox.FileJob
@@ -66,7 +68,10 @@ private enum class Screen { THUMBNAILS, ALBUMS, NEW_ALBUM_PARENT, ADD_ROOT, TRAN
 /**
  * The whole app: the open album's thumbnails, with ✕ to leave on the left, the
  * album's name in the middle opening the album list, and ⋮ on the right for
- * everything else.
+ * everything else. With [pick], another app is asking for files: only those
+ * of its types are shown, a tap hands one over through [onPicked] — or, when
+ * it takes several, a long tap starts a pick finished with ✓ — and the trash,
+ * the slideshow and the settings are out of reach.
  */
 @Composable
 fun MainScreen(
@@ -75,6 +80,8 @@ fun MainScreen(
     onExit: () -> Unit,
     onAbout: () -> Unit,
     modifier: Modifier = Modifier,
+    pick: PickRequest? = null,
+    onPicked: (List<File>) -> Unit = {},
 ) {
     val context = LocalContext.current
     val albumOrder by AppSettings.albumOrder.collectAsState()
@@ -107,8 +114,10 @@ fun MainScreen(
     // Keyed by the album, so another one opens unfiltered.
     var filter by rememberSaveable(vm.album?.path) { mutableStateOf(ItemFilter()) }
     var editingFilter by remember { mutableStateOf(false) }
+    // The album's files of the types asked for, when another app is picking.
+    val listed = remember(items, pick) { if (pick == null) items else items?.filter { pick.accepts(it.file) } }
     // What the grid, the viewer and the slideshow go through: the album sorted, then filtered.
-    val sorted = remember(items, itemOrder, filter) { items?.let { filterItems(sortItems(it, itemOrder), filter) } }
+    val sorted = remember(listed, itemOrder, filter) { listed?.let { filterItems(sortItems(it, itemOrder), filter) } }
     val photos = remember(sorted) { sorted?.filterNot { isVideo(it.file.path) }.orEmpty() }
     // The files picked by a long tap, by path. Keyed by the album, so another one opens with none picked.
     var selection by rememberSaveable(vm.album?.path) { mutableStateOf(emptySet<String>()) }
@@ -317,17 +326,21 @@ fun MainScreen(
                                 overflow = TextOverflow.Ellipsis,
                                 modifier = Modifier.weight(1f).padding(horizontal = 8.dp, vertical = 12.dp),
                             )
-                            LargeIconButton(
-                                Icons.Filled.Share,
-                                stringResource(R.string.share),
-                                { shareFiles(context, picked.map { it.file }) },
-                            )
-                            LargeIconButton(
-                                Icons.Filled.Delete,
-                                stringResource(R.string.to_trash),
-                                { vm.moveToTrash(picked.map { it.file }) },
-                                enabled = !vm.busy,
-                            )
+                            if (pick != null) {
+                                LargeIconButton(Icons.Filled.Check, stringResource(R.string.pick_done), { onPicked(picked.map { it.file }) })
+                            } else {
+                                LargeIconButton(
+                                    Icons.Filled.Share,
+                                    stringResource(R.string.share),
+                                    { shareFiles(context, picked.map { it.file }) },
+                                )
+                                LargeIconButton(
+                                    Icons.Filled.Delete,
+                                    stringResource(R.string.to_trash),
+                                    { vm.moveToTrash(picked.map { it.file }) },
+                                    enabled = !vm.busy,
+                                )
+                            }
                             Box {
                                 MoreButton(onClick = { selectionMenuOpen = true })
                                 AppMenu(expanded = selectionMenuOpen, onDismissRequest = { selectionMenuOpen = false }) {
@@ -335,22 +348,25 @@ fun MainScreen(
                                         selectionMenuOpen = false
                                         selection = sorted.orEmpty().mapTo(LinkedHashSet()) { it.file.path }
                                     }
-                                    AppMenuItem(stringResource(R.string.rotate), enabled = !vm.busy && picked.any { canRotate(it.file) }) {
-                                        selectionMenuOpen = false
-                                        val files = picked.map { it.file }
-                                        vm.rotate(files) { photosChanged(files.map { it.path }) }
-                                    }
-                                    AppMenuItem(stringResource(R.string.rename), enabled = !vm.busy && picked.size == 1) {
-                                        selectionMenuOpen = false
-                                        renamingPath = picked.firstOrNull()?.file?.path
-                                    }
-                                    AppMenuItem(stringResource(R.string.move), enabled = !vm.busy) {
-                                        selectionMenuOpen = false
-                                        pickTransferTarget(picked.map { it.file.path }, Transfer.MOVE)
-                                    }
-                                    AppMenuItem(stringResource(R.string.copy), enabled = !vm.busy) {
-                                        selectionMenuOpen = false
-                                        pickTransferTarget(picked.map { it.file.path }, Transfer.COPY)
+                                    // The files are only being chosen for another app: nothing is done to them.
+                                    if (pick == null) {
+                                        AppMenuItem(stringResource(R.string.rotate), enabled = !vm.busy && picked.any { canRotate(it.file) }) {
+                                            selectionMenuOpen = false
+                                            val files = picked.map { it.file }
+                                            vm.rotate(files) { photosChanged(files.map { it.path }) }
+                                        }
+                                        AppMenuItem(stringResource(R.string.rename), enabled = !vm.busy && picked.size == 1) {
+                                            selectionMenuOpen = false
+                                            renamingPath = picked.firstOrNull()?.file?.path
+                                        }
+                                        AppMenuItem(stringResource(R.string.move), enabled = !vm.busy) {
+                                            selectionMenuOpen = false
+                                            pickTransferTarget(picked.map { it.file.path }, Transfer.MOVE)
+                                        }
+                                        AppMenuItem(stringResource(R.string.copy), enabled = !vm.busy) {
+                                            selectionMenuOpen = false
+                                            pickTransferTarget(picked.map { it.file.path }, Transfer.COPY)
+                                        }
                                     }
                                 }
                             }
@@ -376,9 +392,11 @@ fun MainScreen(
                                     menuOpen = false
                                     screen = Screen.ALBUMS
                                 }
-                                AppMenuItem(stringResource(R.string.trash), enabled = vm.hasStorageAccess) {
-                                    menuOpen = false
-                                    screen = Screen.TRASH
+                                if (pick == null) {
+                                    AppMenuItem(stringResource(R.string.trash), enabled = vm.hasStorageAccess) {
+                                        menuOpen = false
+                                        screen = Screen.TRASH
+                                    }
                                 }
                                 AppMenuItem(stringResource(R.string.sort), enabled = vm.album != null) {
                                     menuOpen = false
@@ -388,16 +406,18 @@ fun MainScreen(
                                     menuOpen = false
                                     editingFilter = true
                                 }
-                                AppMenuItem(stringResource(R.string.slideshow), enabled = photos.isNotEmpty()) {
-                                    menuOpen = false
-                                    val last = vm.album?.let { AppSettings.slideshowFrame(context, it) }
-                                    val at = photos.indexOfFirst { it.file.path == last }
-                                    // From the first photo there is nothing to choose between.
-                                    if (at > 0) slideshowResume = at else slideshowStart = 0
-                                }
-                                AppMenuItem(stringResource(R.string.settings)) {
-                                    menuOpen = false
-                                    screen = Screen.SETTINGS
+                                if (pick == null) {
+                                    AppMenuItem(stringResource(R.string.slideshow), enabled = photos.isNotEmpty()) {
+                                        menuOpen = false
+                                        val last = vm.album?.let { AppSettings.slideshowFrame(context, it) }
+                                        val at = photos.indexOfFirst { it.file.path == last }
+                                        // From the first photo there is nothing to choose between.
+                                        if (at > 0) slideshowResume = at else slideshowStart = 0
+                                    }
+                                    AppMenuItem(stringResource(R.string.settings)) {
+                                        menuOpen = false
+                                        screen = Screen.SETTINGS
+                                    }
                                 }
                             }
                         }
@@ -406,7 +426,7 @@ fun MainScreen(
                         FilterBar(
                             filter = filter,
                             shown = sorted?.size ?: 0,
-                            total = items?.size ?: 0,
+                            total = listed?.size ?: 0,
                             onEdit = { editingFilter = true },
                             onClear = { filter = ItemFilter() },
                         )
@@ -437,10 +457,14 @@ fun MainScreen(
                                     onColumns = { AppSettings.setGridColumns(context, it) },
                                     filtered = !filter.isEmpty,
                                     selected = selection,
-                                    onOpen = { viewerPath = it.file.path },
+                                    onOpen = { item -> if (pick != null) onPicked(listOf(item.file)) else viewerPath = item.file.path },
                                     onSelect = { item ->
                                         val path = item.file.path
-                                        selection = if (path in selection) selection - path else selection + path
+                                        when {
+                                            // One file is all it takes: a long tap hands it over like a tap.
+                                            pick != null && !pick.multiple -> onPicked(listOf(item.file))
+                                            else -> selection = if (path in selection) selection - path else selection + path
+                                        }
                                     },
                                     modifier = Modifier.fillMaxSize(),
                                 )

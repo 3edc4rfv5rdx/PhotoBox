@@ -98,6 +98,12 @@ Work in progress, built to `TZ.md`.
   Share in ⋮; Back returns to that app. A file that cannot be found on
   storage is copied in and shown alone. As the video player of choice, the
   phone's own players are used, never PhotoBox itself.
+- **Picking for another app**: when an app asks for a photo or video — to
+  attach, to post — PhotoBox can be the one to choose it from. Its albums,
+  sorting and filter are all there, showing only the types asked for; a tap
+  hands the file over. An app that takes several gets a long tap to pick
+  them and ✓ to send them back. The trash, slideshow and settings stay out of
+  the way meanwhile.
 - **Folder access**: PhotoBox reads files directly and needs "All files access".
 
 ## Install
