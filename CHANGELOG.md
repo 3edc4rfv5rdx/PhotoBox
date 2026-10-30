@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: An empty album opened offers Delete album right where it says it is empty
 - E: A zoomed photo comes back unzoomed once it is rotated
 - E: A file opened from the trash shows its own name and folder in the bar and in Info, not the name it is kept under
 - F: The video player answers a remote: ← and → jump 10 seconds, OK plays or pauses

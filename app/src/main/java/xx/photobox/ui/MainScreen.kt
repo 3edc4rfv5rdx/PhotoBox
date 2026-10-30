@@ -460,6 +460,12 @@ fun MainScreen(
                                     columns = gridColumns,
                                     onColumns = { AppSettings.setGridColumns(context, it) },
                                     filtered = !filter.isEmpty,
+                                    // Not while picking for another app: nothing is done to the files there.
+                                    onDeleteAlbum = if (pick == null) {
+                                        { vm.album?.let(vm::deleteEmptyAlbum) }
+                                    } else {
+                                        null
+                                    },
                                     selected = selection,
                                     onOpen = { item -> if (pick != null) onPicked(listOf(item.file)) else viewerPath = item.file.path },
                                     onSelect = { item ->

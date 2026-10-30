@@ -88,7 +88,8 @@ private val SCROLLER_THUMB_WIDTH = 6.dp
  * heading over each day's files in date order. A pinch changes the column
  * count through [onColumns]; one finger scrolls, and a long grid gets a bar on
  * the right edge to drag through it, labelled with where the drag has got to.
- * Empty, it says so — or, when [filtered], that the filter lets nothing through.
+ * Empty, it says so, with [onDeleteAlbum] to delete the folder — or, when
+ * [filtered], that the filter lets nothing through.
  * A tap opens a file through [onOpen]; a long tap picks it through
  * [onSelect], and while anything is [selected] a tap picks or drops too.
  */
@@ -101,6 +102,7 @@ fun ThumbnailsScreen(
     columns: Int,
     onColumns: (Int) -> Unit,
     filtered: Boolean,
+    onDeleteAlbum: (() -> Unit)?,
     selected: Set<String>,
     onOpen: (MediaItem) -> Unit,
     onSelect: (MediaItem) -> Unit,
@@ -118,7 +120,16 @@ fun ThumbnailsScreen(
         return
     }
     if (sorted.isEmpty()) {
-        EmptyState(icon = null, title = stringResource(if (filtered) R.string.filter_nothing else R.string.album_empty))
+        val delete: (@Composable () -> Unit)? = if (onDeleteAlbum != null && !filtered) {
+            { DialogConfirmButton(stringResource(R.string.delete_album), danger = true, onClick = onDeleteAlbum) }
+        } else {
+            null
+        }
+        EmptyState(
+            icon = null,
+            title = stringResource(if (filtered) R.string.filter_nothing else R.string.album_empty),
+            action = delete,
+        )
         return
     }
 

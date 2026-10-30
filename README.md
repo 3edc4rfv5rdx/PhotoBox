@@ -24,7 +24,7 @@ Work in progress, built to `TZ.md`.
   the first search folder or any folder picked, and ⋮ on a section's heading
   makes one in that folder. A folder with nothing in it at all shows as an
   empty album, the app's icon for its cover. An album's ⋮ renames its folder,
-  and an empty one's deletes it.
+  and an empty one's deletes it — as does the button on an empty album opened.
 - **Thumbnails**: the open album as a grid, 2 to 5 across — pinch to change,
   and the choice is kept. Newest first under a heading per day, or by name or
   size from the ⋮ menu. A long album gets a bar on the right edge to drag
