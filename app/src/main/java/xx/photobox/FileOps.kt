@@ -89,16 +89,23 @@ enum class Transfer { MOVE, COPY }
  * already there. A move is a rename where it can be; onto another volume,
  * where a rename cannot go, it is a copy, and the originals are deleted once
  * every copy is whole. All or none: should one file not go, what was already
- * done is undone. Returns where each went, in [files]' order; null on failure.
+ * done is undone. Null on failure.
  */
-fun transferGroup(files: List<File>, dir: File, mode: Transfer): List<File>? {
+fun transferGroup(files: List<File>, dir: File, mode: Transfer): Transferred? {
     if (files.isEmpty()) return null
     val targets = freeTargets(files, dir)
-    if (mode == Transfer.MOVE && renameAll(files, targets)) return targets
+    if (mode == Transfer.MOVE && renameAll(files, targets)) return Transferred(targets, emptyList())
     if (!copyAll(files, targets)) return null
-    if (mode == Transfer.MOVE) files.forEach { it.delete() }
-    return targets
+    val left = if (mode == Transfer.MOVE) files.filter { !it.delete() && it.exists() } else emptyList()
+    return Transferred(targets, left)
 }
+
+/**
+ * Where [transferGroup] put each file, in the order given, and the originals
+ * a move by copy [left] where they were — copied whole, but not deleted, so
+ * now in both places.
+ */
+class Transferred(val targets: List<File>, val left: List<File>)
 
 /** Where [files] land in [dir] under the first number free for every one of them; none for 0. */
 internal fun freeTargets(files: List<File>, dir: File): List<File> {

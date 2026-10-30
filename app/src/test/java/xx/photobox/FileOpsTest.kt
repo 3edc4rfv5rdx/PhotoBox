@@ -37,8 +37,9 @@ class FileOpsTest {
         val photo = file("A/p.jpg")
         val raw = file("A/p.dng")
         val to = dir("B")
-        val moved = transferGroup(listOf(photo, raw), to, Transfer.MOVE)
-        assertEquals(listOf(File(to, "p.jpg"), File(to, "p.dng")), moved)
+        val moved = transferGroup(listOf(photo, raw), to, Transfer.MOVE)!!
+        assertEquals(listOf(File(to, "p.jpg"), File(to, "p.dng")), moved.targets)
+        assertTrue(moved.left.isEmpty())
         assertFalse(photo.exists())
         assertFalse(raw.exists())
         assertEquals("A/p.jpg", File(to, "p.jpg").readText())
@@ -51,8 +52,8 @@ class FileOpsTest {
         val to = dir("B")
         // Only the RAW's name is taken, yet the photo is numbered with it, so they stay a pair.
         val there = file("B/p.dng", text = "old")
-        val moved = transferGroup(listOf(photo, raw), to, Transfer.MOVE)
-        assertEquals(listOf(File(to, "p (1).jpg"), File(to, "p (1).dng")), moved)
+        val moved = transferGroup(listOf(photo, raw), to, Transfer.MOVE)!!
+        assertEquals(listOf(File(to, "p (1).jpg"), File(to, "p (1).dng")), moved.targets)
         assertEquals("old", there.readText())
         assertFalse(File(to, "p.jpg").exists())
     }
@@ -61,7 +62,7 @@ class FileOpsTest {
     fun copyKeepsTheOriginalAndItsTime() {
         val photo = file("A/p.jpg", modified = 1_234_000L)
         val to = dir("B")
-        val copied = transferGroup(listOf(photo), to, Transfer.COPY)!!
+        val copied = transferGroup(listOf(photo), to, Transfer.COPY)!!.targets
         assertTrue(photo.exists())
         assertEquals("A/p.jpg", copied[0].readText())
         assertEquals(1_234_000L, copied[0].lastModified())
@@ -70,7 +71,7 @@ class FileOpsTest {
     @Test
     fun copyIntoItsOwnFolderIsNumbered() {
         val photo = file("A/p.jpg")
-        val copied = transferGroup(listOf(photo), photo.parentFile!!, Transfer.COPY)
+        val copied = transferGroup(listOf(photo), photo.parentFile!!, Transfer.COPY)!!.targets
         assertEquals(listOf(File(photo.parentFile, "p (1).jpg")), copied)
         assertTrue(photo.exists())
     }

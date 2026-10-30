@@ -365,13 +365,19 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         }
         viewModelScope.launch {
             val job = if (mode == Transfer.MOVE) FileJob.MOVE else FileJob.COPY
+            // Moved by copy, but the original would not go: the file is now in both places.
+            val leftBehind = AtomicInteger(0)
             val failed = runFileJob(job, groups) { file ->
                 val group = listOf(file) + companionsOf(file)
-                transferGroup(group, dir, mode)?.let { targets ->
-                    targets.map { it.path } + if (mode == Transfer.MOVE) group.map { it.path } else emptyList()
+                transferGroup(group, dir, mode)?.let { done ->
+                    if (done.left.isNotEmpty()) leftBehind.incrementAndGet()
+                    done.targets.map { it.path } + if (mode == Transfer.MOVE) group.map { it.path } else emptyList()
                 }
             }
-            if (failed > 0) notice = if (mode == Transfer.MOVE) FileNotice.MOVE_FAILED else FileNotice.COPY_FAILED
+            when {
+                failed > 0 -> notice = if (mode == Transfer.MOVE) FileNotice.MOVE_FAILED else FileNotice.COPY_FAILED
+                leftBehind.get() > 0 -> notice = FileNotice.MOVE_LEFT_ORIGINALS
+            }
             onDone(failed == 0)
             loadItems()
         }
@@ -533,6 +539,6 @@ enum class TrashJob { RESTORE, EMPTY }
 enum class FileJob { MOVE, COPY, TRASH, ROTATE }
 
 /** What a step on files reports when it did not all go as asked. */
-enum class FileNotice { DELETE_FAILED, RESTORE_EXISTS, RESTORE_FAILED, RESTORE_SOME_LEFT, MOVE_FAILED, COPY_FAILED, ROTATE_FAILED }
+enum class FileNotice { DELETE_FAILED, RESTORE_EXISTS, RESTORE_FAILED, RESTORE_SOME_LEFT, MOVE_FAILED, MOVE_LEFT_ORIGINALS, COPY_FAILED, ROTATE_FAILED }
 
 private const val DAY_MS = 24L * 60 * 60 * 1000

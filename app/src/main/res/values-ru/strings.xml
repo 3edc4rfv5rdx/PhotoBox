@@ -138,4 +138,5 @@
     <string name="filter_count">%1$s из %2$s</string>
     <string name="open_failed">Не удалось открыть файл</string>
     <string name="pick_done">Готово</string>
+    <string name="move_left_originals">Часть файлов скопирована, но оригиналы удалить не удалось</string>
 </resources>

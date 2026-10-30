@@ -706,6 +706,7 @@ private fun FileNotice.messageRes(): Int = when (this) {
     FileNotice.RESTORE_FAILED -> R.string.restore_failed
     FileNotice.RESTORE_SOME_LEFT -> R.string.restore_some_left
     FileNotice.MOVE_FAILED -> R.string.move_failed
+    FileNotice.MOVE_LEFT_ORIGINALS -> R.string.move_left_originals
     FileNotice.COPY_FAILED -> R.string.copy_failed
     FileNotice.ROTATE_FAILED -> R.string.rotate_failed
 }
