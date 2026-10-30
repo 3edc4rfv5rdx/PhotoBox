@@ -134,8 +134,9 @@ fun ViewerScreen(
     var info by rememberSaveable { mutableStateOf<String?>(null) }
     val rotation = rememberMediaRotation()
 
-    // A new page, or the photo turned under the fingers: either way it opens unzoomed.
-    LaunchedEffect(pagerState.currentPage, rotation) { zoom.reset() }
+    // A new page, the photo turned under the fingers or turned by Rotate: each opens unzoomed.
+    val currentKey = sorted.getOrNull(pagerState.currentPage)?.file?.path?.let(::photoKey)
+    LaunchedEffect(pagerState.currentPage, rotation, currentKey) { zoom.reset() }
     LaunchedEffect(pagerState.settledPage) {
         sorted.getOrNull(pagerState.settledPage)?.let { onPage(it.file.path) }
     }
