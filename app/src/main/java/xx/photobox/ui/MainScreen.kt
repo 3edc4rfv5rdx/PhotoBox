@@ -52,6 +52,7 @@ import xx.photobox.Transfer
 import xx.photobox.FileJob
 import xx.photobox.FileNotice
 import xx.photobox.isVideo
+import xx.photobox.canRotate
 import xx.photobox.checkAlbumRename
 import xx.photobox.checkRename
 import xx.photobox.sortItems
@@ -328,6 +329,11 @@ fun MainScreen(
                                         selectionMenuOpen = false
                                         selection = sorted.orEmpty().mapTo(LinkedHashSet()) { it.file.path }
                                     }
+                                    AppMenuItem(stringResource(R.string.rotate), enabled = !vm.busy && picked.any { canRotate(it.file) }) {
+                                        selectionMenuOpen = false
+                                        val files = picked.map { it.file }
+                                        vm.rotate(files) { photosChanged(files.map { it.path }) }
+                                    }
                                     AppMenuItem(stringResource(R.string.rename), enabled = !vm.busy && picked.size == 1) {
                                         selectionMenuOpen = false
                                         renamingPath = picked.firstOrNull()?.file?.path
@@ -427,6 +433,7 @@ fun MainScreen(
                                             FileJob.MOVE -> R.string.moving
                                             FileJob.COPY -> R.string.copying
                                             FileJob.TRASH -> R.string.trashing
+                                            FileJob.ROTATE -> R.string.rotating
                                         },
                                         formatCount(vm.fileJobDone),
                                         formatCount(vm.fileJobTotal),
@@ -453,6 +460,7 @@ fun MainScreen(
                             startPath = open,
                             onPage = { viewerPath = it },
                             onShare = { shareFiles(context, listOf(it.file)) },
+                            onRotate = { item -> vm.rotate(listOf(item.file)) { photosChanged(listOf(item.file.path)) } },
                             onRename = { renamingPath = it.file.path },
                             onTransfer = { item, mode -> pickTransferTarget(listOf(item.file.path), mode) },
                             onDelete = { item ->
@@ -494,6 +502,7 @@ fun MainScreen(
                     trashViewed = it
                 },
                 onShare = null,
+                onRotate = null,
                 onRename = null,
                 onTransfer = null,
                 onDelete = null,
@@ -632,6 +641,7 @@ private fun FileNotice.messageRes(): Int = when (this) {
     FileNotice.RESTORE_SOME_LEFT -> R.string.restore_some_left
     FileNotice.MOVE_FAILED -> R.string.move_failed
     FileNotice.COPY_FAILED -> R.string.copy_failed
+    FileNotice.ROTATE_FAILED -> R.string.rotate_failed
 }
 
 private fun ItemOrder.labelRes(): Int = when (this) {

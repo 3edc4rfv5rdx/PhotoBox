@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: Rotate photos 90° clockwise without loss, by their EXIF orientation, from the viewer's ⋮ or the picked files'
 - F: The slideshow stops after the last photo with the app's icon over it instead of going round, and a show seen to the end is not offered to go on
 - N: Rename an album from its ⋮ in the album list; the open album and the slideshow's place follow it
 - N: Rename a file from the viewer's ⋮ or the picked one's, its RAW along with it, the extension kept

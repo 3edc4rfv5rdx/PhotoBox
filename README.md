@@ -34,8 +34,11 @@ Work in progress, built to `TZ.md`.
 - **Picking files**: a long tap on a thumbnail picks it, and while anything
   is picked a tap picks or drops more; ⋮ → Select all picks the whole album.
   The bar on top then shares them with another app or moves them to the
-  trash, and its ⋮ moves or copies them, or renames the one picked; ← or
-  Back drops the pick.
+  trash, and its ⋮ turns, moves or copies them, or renames the one picked;
+  ← or Back drops the pick.
+- **Turn**: ⋮ → Rotate turns a JPEG, PNG or WebP 90° clockwise by its EXIF
+  orientation only — the picture itself is not re-encoded, so nothing is
+  lost however often it is turned — keeping the file's time.
 - **Rename**: the name is typed without its extension, which stays; a RAW
   beside the photo is renamed with it. A name already taken there is refused.
 - **Move and copy**: from the picked files' ⋮ or the viewer's, into a folder
@@ -47,8 +50,8 @@ Work in progress, built to `TZ.md`.
   and trashing many files show how far they have got.
 - **Viewer**: a tap on a thumbnail opens it full screen, in the grid's order.
   Swipe to the next or previous file; pinch or double-tap to zoom, and drag
-  while zoomed. A tap hides or shows the bar on top, whose ⋮ shares, renames,
-  moves or copies the file.
+  while zoomed. A tap hides or shows the bar on top, whose ⋮ shares, turns,
+  renames, moves or copies the file.
   A video shows a still
   with a play button: it plays in PhotoBox's own player — play and pause, the
   time and a seek bar, hidden and shown by a tap — or in another app with

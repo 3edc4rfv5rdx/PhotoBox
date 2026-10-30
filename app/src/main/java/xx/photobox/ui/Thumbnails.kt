@@ -18,6 +18,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,6 +59,21 @@ private val thumbnailDispatcher = Dispatchers.IO.limitedParallelism(3)
  * reopening a list shows them at once. */
 private val thumbnailCache = bitmapCache(memoryShare = 16)
 
+/** How many times each photo has been changed in place this run — turned — by path. */
+private val revisions = mutableStateMapOf<String, Int>()
+
+/**
+ * [path] as a decode's key, carrying how many times the photo has been
+ * changed in place, so a changed one is decoded afresh instead of taken from
+ * a cache. Read in composition, a change redraws whatever shows the photo.
+ */
+internal fun photoKey(path: String): String = "${revisions[path] ?: 0}:$path"
+
+/** Marks [paths] changed in place: everything showing them decodes them again. Main thread only. */
+fun photosChanged(paths: List<String>) {
+    for (path in paths) revisions[path] = (revisions[path] ?: 0) + 1
+}
+
 /** Decoded bitmaps by key, bounded by bytes to one [memoryShare]-th of what the app may use. */
 internal fun bitmapCache(memoryShare: Int): LruCache<String, Bitmap> =
     object : LruCache<String, Bitmap>((Runtime.getRuntime().maxMemory() / memoryShare).toInt()) {
@@ -72,7 +88,7 @@ fun PhotoThumbnail(
     maxDimension: Int = THUMBNAIL_MAX_DIMENSION,
     corner: Dp = 8.dp,
 ) {
-    val key = "$maxDimension:$path"
+    val key = "$maxDimension:${photoKey(path)}"
     val bitmap by produceState<Bitmap?>(initialValue = thumbnailCache.get(key), key1 = key) {
         value = thumbnailCache.get(key)
             ?: withContext(thumbnailDispatcher) { withCancellationSignal { decodeThumbnail(path, maxDimension, it) } }

@@ -124,4 +124,7 @@
     <string name="delete_album">Видалити альбом</string>
     <string name="rename">Перейменувати</string>
     <string name="rename_failed">Не вдалося перейменувати</string>
+    <string name="rotate">Повернути</string>
+    <string name="rotating">Повернуто %1$s з %2$s</string>
+    <string name="rotate_failed">Не все вдалося повернути</string>
 </resources>

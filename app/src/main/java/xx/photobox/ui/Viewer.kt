@@ -75,6 +75,7 @@ import xx.photobox.AppSettings
 import xx.photobox.MediaItem
 import xx.photobox.R
 import xx.photobox.Transfer
+import xx.photobox.canRotate
 import xx.photobox.VideoPlayer
 import xx.photobox.isVideo
 import java.io.File
@@ -91,7 +92,8 @@ private val PLAY_ICON = 56.dp
  * [startPath]. A swipe goes to the next or previous one; a pinch or a double
  * tap zooms, and while zoomed a drag moves the photo instead of the page. A
  * tap shows or hides the bar on top, whose ⋮ has the file's info, and sends
- * it to another app through [onShare], renames it through [onRename], sends
+ * it to another app through [onShare], turns it through [onRotate] when it
+ * can be, renames it through [onRename], sends
  * it to another folder through [onTransfer] or to the trash through
  * [onDelete], when there are those. [onPage] hears each file settled on, so
  * the caller can open on it again after the list is reloaded.
@@ -102,6 +104,7 @@ fun ViewerScreen(
     startPath: String,
     onPage: (String) -> Unit,
     onShare: ((MediaItem) -> Unit)?,
+    onRotate: ((MediaItem) -> Unit)?,
     onRename: ((MediaItem) -> Unit)?,
     onTransfer: ((MediaItem, Transfer) -> Unit)?,
     onDelete: ((MediaItem) -> Unit)?,
@@ -210,6 +213,12 @@ fun ViewerScreen(
                                 current?.let(onShare)
                             }
                         }
+                        if (onRotate != null) {
+                            AppMenuItem(stringResource(R.string.rotate), enabled = current != null && canRotate(current.file)) {
+                                menuOpen = false
+                                current?.let(onRotate)
+                            }
+                        }
                         if (onRename != null) {
                             AppMenuItem(stringResource(R.string.rename), enabled = current != null) {
                                 menuOpen = false
@@ -297,7 +306,7 @@ private fun PhotoPage(
     onPlay: () -> Unit,
 ) {
     val video = isVideo(path)
-    val state by produceState<PhotoState>(initialValue = PhotoState.Loading, key1 = path) {
+    val state by produceState<PhotoState>(initialValue = PhotoState.Loading, key1 = photoKey(path)) {
         // A video's still is not kept: it is cancelled when paged past, and a
         // kept one would hold that up.
         val bitmap = if (video) {
@@ -406,11 +415,11 @@ private fun playVideo(context: Context, path: String) {
 
 // ---------- Decoded photos ----------
 
-/** Decoded photos by path, bounded by bytes: paging back shows the last few at
+/** Decoded photos by [photoKey], bounded by bytes: paging back shows the last few at
  * once, and the next one is ready before it is paged to. */
 private val photoCache = bitmapCache(memoryShare = 4)
 
-/** Decodes under way by path, so the photo paged to while it is still being
+/** Decodes under way by [photoKey], so the photo paged to while it is still being
  * read ahead waits for that decode instead of starting a second. Main thread only. */
 private val photoLoads = HashMap<String, Deferred<Bitmap?>>()
 
@@ -424,14 +433,15 @@ private fun decodeForScreen(path: String, signal: CancellationSignal): Bitmap? =
 
 /** The photo at [path] fitted to [PHOTO_MAX_DIMENSION], from [photoCache] or decoded once into it. */
 internal fun loadPhoto(path: String): Deferred<Bitmap?> {
-    photoCache.get(path)?.let { return CompletableDeferred(it) }
-    return photoLoads.getOrPut(path) {
+    val key = photoKey(path)
+    photoCache.get(key)?.let { return CompletableDeferred(it) }
+    return photoLoads.getOrPut(key) {
         photoScope.async {
             try {
                 withContext(Dispatchers.IO) { decodeForScreen(path, CancellationSignal()) }
-                    ?.also { photoCache.put(path, it) }
+                    ?.also { photoCache.put(key, it) }
             } finally {
-                photoLoads.remove(path)
+                photoLoads.remove(key)
             }
         }
     }

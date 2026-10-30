@@ -120,4 +120,7 @@
     <string name="delete_album">Delete album</string>
     <string name="rename">Rename</string>
     <string name="rename_failed">Could not rename</string>
+    <string name="rotate">Rotate</string>
+    <string name="rotating">Rotated %1$s of %2$s</string>
+    <string name="rotate_failed">Not everything could be rotated</string>
 </resources>

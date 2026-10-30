@@ -408,6 +408,25 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     }
 
     /**
+     * Turns each of [files] that can be turned 90° clockwise, with progress
+     * in [fileJobDone] of [fileJobTotal]; the rest are left as they are.
+     * [onDone] hears it is over, on the main thread, for what shows them to
+     * decode them again; the open album is read again.
+     */
+    fun rotate(files: List<File>, onDone: () -> Unit) {
+        val turnable = files.filter(::canRotate)
+        if (busy || turnable.isEmpty()) return
+        viewModelScope.launch {
+            val failed = runFileJob(FileJob.ROTATE, turnable) { file ->
+                if (rotateClockwise(file)) listOf(file.path) else null
+            }
+            if (failed > 0) notice = FileNotice.ROTATE_FAILED
+            onDone()
+            loadItems()
+        }
+    }
+
+    /**
      * Renames [file] and its RAW companions to [base], all or none. [onDone]
      * hears the file's new place, or null when it could not be renamed; the
      * open album is read again either way.
@@ -541,9 +560,9 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
 enum class TrashJob { RESTORE, EMPTY }
 
 /** A step on the album's files, shown with its progress while it runs. */
-enum class FileJob { MOVE, COPY, TRASH }
+enum class FileJob { MOVE, COPY, TRASH, ROTATE }
 
 /** What a step on files reports when it did not all go as asked. */
-enum class FileNotice { DELETE_FAILED, RESTORE_EXISTS, RESTORE_FAILED, RESTORE_SOME_LEFT, MOVE_FAILED, COPY_FAILED }
+enum class FileNotice { DELETE_FAILED, RESTORE_EXISTS, RESTORE_FAILED, RESTORE_SOME_LEFT, MOVE_FAILED, COPY_FAILED, ROTATE_FAILED }
 
 private const val DAY_MS = 24L * 60 * 60 * 1000

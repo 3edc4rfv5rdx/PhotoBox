@@ -1,5 +1,6 @@
 package xx.photobox
 
+import androidx.exifinterface.media.ExifInterface
 import java.io.File
 import java.io.IOException
 import java.nio.file.FileAlreadyExistsException
@@ -52,6 +53,30 @@ fun checkRename(file: File, base: String): NameCheck {
 internal fun isSameFile(a: File, b: File): Boolean = try {
     Files.isSameFile(a.toPath(), b.toPath())
 } catch (e: IOException) {
+    false
+}
+
+/** Photos whose EXIF orientation the platform library can write. */
+private val ROTATABLE_EXTENSIONS = setOf("jpg", "jpeg", "png", "webp")
+
+/** Whether [file] can be turned by [rotateClockwise]: not a video, nor a HEIC, whose orientation cannot be written. */
+fun canRotate(file: File): Boolean = file.extension.lowercase() in ROTATABLE_EXTENSIONS
+
+/**
+ * Turns [file] 90° clockwise by its EXIF orientation alone: the pixels are
+ * not touched, so nothing is lost however often it is turned. Its time is
+ * kept — the grid falls back on it for a photo with no date of its own.
+ */
+fun rotateClockwise(file: File): Boolean = try {
+    val modified = file.lastModified()
+    ExifInterface(file.path).apply {
+        rotate(90)
+        saveAttributes()
+    }
+    file.setLastModified(modified)
+    true
+} catch (e: Exception) {
+    // A malformed EXIF block throws more than IOException; the photo stays as it was.
     false
 }
 
