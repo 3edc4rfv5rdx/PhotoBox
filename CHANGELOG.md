@@ -3,6 +3,8 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The slideshow's time per photo is a slider from 1 to 30 seconds
+- F: Photos and videos turn by the sensor always, only like the system's auto-rotate, or never — a choice in Settings instead of a switch
 - N: Photos, videos and the slideshow turn with the phone by the sensor, auto-rotate off or not, while the rest of the app stays in the device's own orientation — portrait on a phone, landscape on a TV box; the video player has its own upright controls for it
 - N: Slideshow of the album's photos from the ⋮ menu, faded one into the next, each held for the time set in Settings
 - N: Videos play in the app's own player, or in another app with the Video player setting

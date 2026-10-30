@@ -53,8 +53,11 @@
     <string name="video_play_failed">Не удалось воспроизвести видео</string>
     <string name="setting_slide_time">Время слайда</string>
     <string name="seconds_short">%1$d с</string>
-    <string name="setting_sensor_rotation">Поворачивать фото и видео по датчику</string>
     <string name="pause">Пауза</string>
+    <string name="setting_media_rotation">Поворот фото и видео</string>
+    <string name="rotation_sensor">По датчику</string>
+    <string name="rotation_system">Как в системе</string>
+    <string name="rotation_never">Никогда</string>
     <plurals name="file_count">
         <item quantity="one">%1$s файл</item>
         <item quantity="few">%1$s файла</item>

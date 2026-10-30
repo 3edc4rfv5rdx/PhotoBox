@@ -23,8 +23,15 @@ const val ACCENT_COUNT = 6
 /** Where a video plays: in the app's own player, or handed to another app. */
 enum class VideoPlayer { BUILT_IN, EXTERNAL }
 
+/**
+ * When photos, videos and the slideshow turn with the phone: by the sensor
+ * whatever the system says, only while the system's auto-rotate is on, or not
+ * at all.
+ */
+enum class MediaRotation { SENSOR, SYSTEM, NEVER }
+
 /** The times a slideshow can hold each photo for, in seconds. */
-val SLIDE_SECONDS = listOf(3, 5, 8, 10, 15, 30)
+val SLIDE_SECONDS = 1..30
 const val DEFAULT_SLIDE_SECONDS = 5
 
 /** How many thumbnails across a pinch can set. */
@@ -47,7 +54,10 @@ object AppSettings {
     private const val KEY_ITEM_ORDER = "item_order"
     private const val KEY_VIDEO_PLAYER = "video_player"
     private const val KEY_SLIDE_SECONDS = "slide_seconds"
-    private const val KEY_SENSOR_ROTATION = "sensor_rotation"
+    private const val KEY_MEDIA_ROTATION = "media_rotation"
+
+    /** The on/off switch [KEY_MEDIA_ROTATION] replaced; read once to carry an "off" over. */
+    private const val KEY_SENSOR_ROTATION_OLD = "sensor_rotation"
 
     private val _themeMode = MutableStateFlow(ThemeMode.SYSTEM)
     val themeMode: StateFlow<ThemeMode> = _themeMode.asStateFlow()
@@ -72,17 +82,13 @@ object AppSettings {
     private val _videoPlayer = MutableStateFlow(VideoPlayer.BUILT_IN)
     val videoPlayer: StateFlow<VideoPlayer> = _videoPlayer.asStateFlow()
 
-    /** How long each photo of a slideshow stays up; one of [SLIDE_SECONDS]. */
+    /** How long each photo of a slideshow stays up, in [SLIDE_SECONDS]. */
     private val _slideSeconds = MutableStateFlow(DEFAULT_SLIDE_SECONDS)
     val slideSeconds: StateFlow<Int> = _slideSeconds.asStateFlow()
 
-    /**
-     * Whether photos, videos and the slideshow turn with the phone, by the
-     * sensor and whatever the system's auto-rotate says; the rest of the app
-     * stays in the device's own orientation either way.
-     */
-    private val _sensorRotation = MutableStateFlow(true)
-    val sensorRotation: StateFlow<Boolean> = _sensorRotation.asStateFlow()
+    /** When photos, videos and the slideshow turn with the phone; the rest of the app never does. */
+    private val _mediaRotation = MutableStateFlow(MediaRotation.SENSOR)
+    val mediaRotation: StateFlow<MediaRotation> = _mediaRotation.asStateFlow()
 
     fun load(context: Context) {
         val prefs = prefs(context)
@@ -95,7 +101,11 @@ object AppSettings {
         _videoPlayer.value = enumOr(prefs.getString(KEY_VIDEO_PLAYER, null), VideoPlayer.BUILT_IN)
         _slideSeconds.value = prefs.getInt(KEY_SLIDE_SECONDS, DEFAULT_SLIDE_SECONDS).takeIf { it in SLIDE_SECONDS }
             ?: DEFAULT_SLIDE_SECONDS
-        _sensorRotation.value = prefs.getBoolean(KEY_SENSOR_ROTATION, true)
+        val oldOff = !prefs.getBoolean(KEY_SENSOR_ROTATION_OLD, true)
+        _mediaRotation.value = enumOr(
+            prefs.getString(KEY_MEDIA_ROTATION, null),
+            if (oldOff) MediaRotation.NEVER else MediaRotation.SENSOR,
+        )
     }
 
     fun setThemeMode(context: Context, mode: ThemeMode) {
@@ -141,9 +151,12 @@ object AppSettings {
         prefs(context).edit { putInt(KEY_SLIDE_SECONDS, seconds) }
     }
 
-    fun setSensorRotation(context: Context, enabled: Boolean) {
-        _sensorRotation.value = enabled
-        prefs(context).edit { putBoolean(KEY_SENSOR_ROTATION, enabled) }
+    fun setMediaRotation(context: Context, rotation: MediaRotation) {
+        _mediaRotation.value = rotation
+        prefs(context).edit {
+            putString(KEY_MEDIA_ROTATION, rotation.name)
+            remove(KEY_SENSOR_ROTATION_OLD)
+        }
     }
 
     /** The album open last, kept across launches. Null before one was ever opened. */

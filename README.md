@@ -33,11 +33,12 @@ Work in progress, built to `TZ.md`.
 - **Turning**: the app stays in the device's own orientation — portrait on a
   phone, landscape on a TV box — and photos, videos and the slideshow
   turn with the phone by its sensor, whatever the system's auto-rotate says;
-  with the phone on its side, a swipe still runs along the photo. A switch in
-  Settings keeps them upright instead.
+  with the phone on its side, a swipe still runs along the photo. Settings
+  can make them turn only while the system's auto-rotate is on, or never.
 - **Slideshow**: ⋮ → Slideshow goes through the album's photos in the grid's
   order, round and round, each fading into the next; videos are passed over.
-  Each photo stays up for the time set in Settings, 5 seconds unless changed.
+  Each photo stays up for the time set in Settings with a slider, 1 to 30
+  seconds, 5 unless changed.
   The screen stays on and the system bars are hidden; a tap or Back ends it.
 - **Folder access**: PhotoBox reads files directly and needs "All files access".
 

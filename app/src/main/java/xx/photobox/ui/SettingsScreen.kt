@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.updater.Updater
 import xx.photobox.AppSettings
+import xx.photobox.MediaRotation
 import xx.photobox.R
 import xx.photobox.SLIDE_SECONDS
 import xx.photobox.ThemeMode
@@ -37,11 +39,12 @@ import xx.photobox.VideoPlayer
 import xx.photobox.currentLanguageTag
 import xx.photobox.setLanguageTag
 import xx.photobox.supportedLanguages
+import kotlin.math.roundToInt
 
 /** Which editor is open; only one can be at a time. */
-private enum class Editing { NONE, THEME, ACCENT, LANGUAGE, PLAYER, SLIDE }
+private enum class Editing { NONE, THEME, ACCENT, LANGUAGE, PLAYER, ROTATION }
 
-/** Theme, accent colour, language, the start-up update check, whether hidden albums are listed, the video player, the slideshow's pace and turning by the sensor. */
+/** Theme, accent colour, language, the start-up update check, whether hidden albums are listed, the video player, the slideshow's pace and when photos turn. */
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -51,7 +54,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     val showHidden by AppSettings.showHidden.collectAsState()
     val videoPlayer by AppSettings.videoPlayer.collectAsState()
     val slideSeconds by AppSettings.slideSeconds.collectAsState()
-    val sensorRotation by AppSettings.sensorRotation.collectAsState()
+    val mediaRotation by AppSettings.mediaRotation.collectAsState()
 
     val systemLabel = stringResource(R.string.language_system)
     val languages = remember(context, systemLabel) { supportedLanguages(context, systemLabel) }
@@ -99,9 +102,11 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             Updater.setEnabled(context, it)
         }
         HorizontalDivider()
-        SwitchRow(stringResource(R.string.setting_sensor_rotation), sensorRotation) {
-            AppSettings.setSensorRotation(context, it)
-        }
+        SettingRow(
+            label = stringResource(R.string.setting_media_rotation),
+            value = stringResource(mediaRotation.labelRes()),
+            onClick = { editing = Editing.ROTATION },
+        )
         HorizontalDivider()
         SwitchRow(stringResource(R.string.setting_show_hidden), showHidden) { AppSettings.setShowHidden(context, it) }
         HorizontalDivider()
@@ -111,11 +116,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             onClick = { editing = Editing.PLAYER },
         )
         HorizontalDivider()
-        SettingRow(
-            label = stringResource(R.string.setting_slide_time),
-            value = stringResource(R.string.seconds_short, slideSeconds),
-            onClick = { editing = Editing.SLIDE },
-        )
+        SlideTimeRow(slideSeconds) { AppSettings.setSlideSeconds(context, it) }
     }
 
     when (editing) {
@@ -172,14 +173,14 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             },
         )
 
-        Editing.SLIDE -> ChoiceDialog(
-            title = stringResource(R.string.setting_slide_time),
-            options = SLIDE_SECONDS,
-            selected = slideSeconds,
-            label = { stringResource(R.string.seconds_short, it) },
+        Editing.ROTATION -> ChoiceDialog(
+            title = stringResource(R.string.setting_media_rotation),
+            options = MediaRotation.entries,
+            selected = mediaRotation,
+            label = { stringResource(it.labelRes()) },
             onDismiss = { editing = Editing.NONE },
             onPick = {
-                AppSettings.setSlideSeconds(context, it)
+                AppSettings.setMediaRotation(context, it)
                 editing = Editing.NONE
             },
         )
@@ -200,6 +201,41 @@ private fun SwitchRow(label: String, checked: Boolean, onCheckedChange: (Boolean
     }
 }
 
+/**
+ * The slideshow's time per photo, a second at a time across [SLIDE_SECONDS].
+ * The number follows the thumb; it is kept once the thumb is let go.
+ */
+@Composable
+private fun SlideTimeRow(seconds: Int, onChange: (Int) -> Unit) {
+    var dragged by remember { mutableStateOf<Float?>(null) }
+    val shown = dragged?.roundToInt() ?: seconds
+    Column(Modifier.fillMaxWidth().padding(vertical = 10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                stringResource(R.string.setting_slide_time),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                stringResource(R.string.seconds_short, shown),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+        }
+        Slider(
+            value = dragged ?: seconds.toFloat(),
+            onValueChange = { dragged = it },
+            onValueChangeFinished = {
+                dragged?.let { onChange(it.roundToInt()) }
+                dragged = null
+            },
+            valueRange = SLIDE_SECONDS.first.toFloat()..SLIDE_SECONDS.last.toFloat(),
+            // Stops between the ends, so the thumb lands on whole seconds.
+            steps = SLIDE_SECONDS.last - SLIDE_SECONDS.first - 1,
+        )
+    }
+}
+
 @Composable
 private fun SettingRow(label: String, value: String, onClick: () -> Unit) {
     Row(
@@ -209,6 +245,12 @@ private fun SettingRow(label: String, value: String, onClick: () -> Unit) {
         Text(label, style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
         Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
     }
+}
+
+private fun MediaRotation.labelRes(): Int = when (this) {
+    MediaRotation.SENSOR -> R.string.rotation_sensor
+    MediaRotation.SYSTEM -> R.string.rotation_system
+    MediaRotation.NEVER -> R.string.rotation_never
 }
 
 private fun VideoPlayer.labelRes(): Int = when (this) {
