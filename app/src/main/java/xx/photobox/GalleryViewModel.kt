@@ -69,6 +69,18 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     /** The album [items] belong to, so a reload of the same one keeps them on screen while it runs. */
     private var itemsAlbum: File? = null
 
+    /** Everything in the trashes, newest first; null while it is being looked through. */
+    var trashEntries by mutableStateOf<List<TrashEntry>?>(null)
+        private set
+
+    /** Set while the trash is being changed — a restore, a delete, emptying it — so nothing else starts meanwhile. */
+    var trashBusy by mutableStateOf(false)
+        private set
+
+    /** What the last trash step has to say, for a toast; cleared once said. */
+    var trashNotice by mutableStateOf<TrashNotice?>(null)
+        private set
+
     /** The new-album dialog's contents while it is open, or while its folder is being picked. */
     var draft by mutableStateOf<AlbumDraft?>(null)
         private set
@@ -85,13 +97,19 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     private var creating = false
 
     init {
-        if (hasStorageAccess) album = startAlbum()
+        if (hasStorageAccess) {
+            album = startAlbum()
+            purgeOldTrash()
+        }
     }
 
     /** Called on every resume: the grant is flipped in system Settings, outside the app. */
     fun refreshStorageAccess() {
         val granted = hasAllFilesAccess()
-        if (granted && !hasStorageAccess && album == null) album = startAlbum()
+        if (granted && !hasStorageAccess) {
+            if (album == null) album = startAlbum()
+            purgeOldTrash()
+        }
         hasStorageAccess = granted
         // Files may have come and gone in another app meanwhile.
         if (resumed && granted && itemsAlbum != null) loadItems()
@@ -166,6 +184,10 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    /** The folders albums and trashes are looked for in: the search roots, or every volume without any. */
+    private fun searchRoots(): List<File> =
+        AppSettings.roots.value.map(::File).ifEmpty { storageRoots(getApplication()).map { it.dir } }
+
     /**
      * Looks for albums again, in the search roots or, without any, on every
      * volume. The last list stays on screen meanwhile, so coming back to the
@@ -181,8 +203,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         scanning = true
         scanJob = viewModelScope.launch {
             try {
-                val roots = AppSettings.roots.value.map(::File)
-                    .ifEmpty { storageRoots(getApplication()).map { it.dir } }
+                val roots = searchRoots()
                 albums = withContext(Dispatchers.IO) { AlbumScanner.scan(roots) { ensureActive() } }
                 scannedRoots = roots
             } finally {
@@ -233,4 +254,93 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
             creating = false
         }
     }
+
+    // ---------- Trash ----------
+
+    /** Deletes for good what has been in the trash longer than the setting allows, once per start. */
+    private fun purgeOldTrash() {
+        val cutoff = System.currentTimeMillis() - AppSettings.trashDays.value * DAY_MS
+        viewModelScope.launch(Dispatchers.IO) {
+            runCatching { Trash.purgeOlderThan(searchRoots(), cutoff) { ensureActive() } }
+        }
+    }
+
+    fun loadTrash() {
+        if (!hasStorageAccess) return
+        viewModelScope.launch {
+            trashEntries = withContext(Dispatchers.IO) { Trash.list(searchRoots()) { ensureActive() } }
+        }
+    }
+
+    /**
+     * Moves [file] into its folder's trash. [onDone] hears whether it went, on
+     * the main thread; the open album is read again either way.
+     */
+    fun moveToTrash(file: File, onDone: (Boolean) -> Unit = {}) {
+        if (trashBusy) return
+        trashBusy = true
+        viewModelScope.launch {
+            val moved = withContext(Dispatchers.IO) {
+                val companions = companionsOf(file)
+                Trash.moveToTrash(file, System.currentTimeMillis()).also { ok ->
+                    if (ok) announceChanged(getApplication(), (listOf(file) + companions).map { it.path })
+                }
+            }
+            trashBusy = false
+            if (!moved) trashNotice = TrashNotice.DELETE_FAILED
+            onDone(moved)
+            loadItems()
+        }
+    }
+
+    fun restore(entry: TrashEntry) = changeTrash {
+        when (Trash.restore(entry)) {
+            RestoreResult.OK -> {
+                announceChanged(getApplication(), listOf(entry.original.path))
+                null
+            }
+            RestoreResult.EXISTS -> TrashNotice.RESTORE_EXISTS
+            RestoreResult.FAILED -> TrashNotice.RESTORE_FAILED
+        }
+    }
+
+    fun purge(entry: TrashEntry) = changeTrash {
+        if (Trash.purge(entry)) null else TrashNotice.DELETE_FAILED
+    }
+
+    /** Puts back everything it can; what would land on a file already there stays in the trash. */
+    fun restoreAll() = changeTrash {
+        val left = trashEntries.orEmpty().count { entry ->
+            val ok = Trash.restore(entry) == RestoreResult.OK
+            if (ok) announceChanged(getApplication(), listOf(entry.original.path))
+            !ok
+        }
+        if (left > 0) TrashNotice.RESTORE_SOME_LEFT else null
+    }
+
+    fun emptyTrash() = changeTrash {
+        if (trashEntries.orEmpty().map { Trash.purge(it) }.all { it }) null else TrashNotice.DELETE_FAILED
+    }
+
+    fun noticeShown() {
+        trashNotice = null
+    }
+
+    /** Runs [step] off the main thread with the trash marked busy, then reads the trash and the open album again. */
+    private fun changeTrash(step: () -> TrashNotice?) {
+        if (trashBusy) return
+        trashBusy = true
+        viewModelScope.launch {
+            val notice = withContext(Dispatchers.IO) { step() }
+            trashEntries = withContext(Dispatchers.IO) { Trash.list(searchRoots()) { ensureActive() } }
+            trashBusy = false
+            notice?.let { trashNotice = it }
+            loadItems()
+        }
+    }
 }
+
+/** What a trash step reports when it did not all go as asked. */
+enum class TrashNotice { DELETE_FAILED, RESTORE_EXISTS, RESTORE_FAILED, RESTORE_SOME_LEFT }
+
+private const val DAY_MS = 24L * 60 * 60 * 1000

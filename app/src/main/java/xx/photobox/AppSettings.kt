@@ -31,6 +31,10 @@ enum class VideoPlayer { BUILT_IN, EXTERNAL }
  */
 enum class MediaRotation { SENSOR, SYSTEM, NEVER }
 
+/** How long the trash can be set to keep a file, in days. */
+val TRASH_DAYS = listOf(7, 14, 30, 60, 90)
+const val DEFAULT_TRASH_DAYS = 30
+
 /** The times a slideshow can hold each photo for, in seconds. */
 val SLIDE_SECONDS = 1..30
 const val DEFAULT_SLIDE_SECONDS = 5
@@ -59,6 +63,7 @@ object AppSettings {
     private const val KEY_VIDEO_PLAYER = "video_player"
     private const val KEY_SLIDE_SECONDS = "slide_seconds"
     private const val KEY_MEDIA_ROTATION = "media_rotation"
+    private const val KEY_TRASH_DAYS = "trash_days"
 
     /** The on/off switch [KEY_MEDIA_ROTATION] replaced; read once to carry an "off" over. */
     private const val KEY_SENSOR_ROTATION_OLD = "sensor_rotation"
@@ -97,6 +102,10 @@ object AppSettings {
     private val _slideSeconds = MutableStateFlow(DEFAULT_SLIDE_SECONDS)
     val slideSeconds: StateFlow<Int> = _slideSeconds.asStateFlow()
 
+    /** How many days a file stays in the trash before it is deleted for good; one of [TRASH_DAYS]. */
+    private val _trashDays = MutableStateFlow(DEFAULT_TRASH_DAYS)
+    val trashDays: StateFlow<Int> = _trashDays.asStateFlow()
+
     /** When photos, videos and the slideshow turn with the phone; the rest of the app never does. */
     private val _mediaRotation = MutableStateFlow(MediaRotation.SENSOR)
     val mediaRotation: StateFlow<MediaRotation> = _mediaRotation.asStateFlow()
@@ -115,6 +124,8 @@ object AppSettings {
         _videoPlayer.value = enumOr(prefs.getString(KEY_VIDEO_PLAYER, null), VideoPlayer.BUILT_IN)
         _slideSeconds.value = prefs.getInt(KEY_SLIDE_SECONDS, DEFAULT_SLIDE_SECONDS).takeIf { it in SLIDE_SECONDS }
             ?: DEFAULT_SLIDE_SECONDS
+        _trashDays.value = prefs.getInt(KEY_TRASH_DAYS, DEFAULT_TRASH_DAYS).takeIf { it in TRASH_DAYS }
+            ?: DEFAULT_TRASH_DAYS
         val oldOff = !prefs.getBoolean(KEY_SENSOR_ROTATION_OLD, true)
         _mediaRotation.value = enumOr(
             prefs.getString(KEY_MEDIA_ROTATION, null),
@@ -163,6 +174,12 @@ object AppSettings {
         if (seconds !in SLIDE_SECONDS) return
         _slideSeconds.value = seconds
         prefs(context).edit { putInt(KEY_SLIDE_SECONDS, seconds) }
+    }
+
+    fun setTrashDays(context: Context, days: Int) {
+        if (days !in TRASH_DAYS) return
+        _trashDays.value = days
+        prefs(context).edit { putInt(KEY_TRASH_DAYS, days) }
     }
 
     fun setMediaRotation(context: Context, rotation: MediaRotation) {

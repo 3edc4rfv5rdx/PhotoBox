@@ -12,7 +12,6 @@
     <string name="slideshow">Слайд-шоу</string>
     <string name="settings">Налаштування</string>
     <string name="about">Про програму</string>
-    <string name="not_ready">Ще не готово</string>
     <string name="cancel">Скасувати</string>
     <string name="setting_theme">Тема</string>
     <string name="setting_accent">Колір</string>
@@ -81,6 +80,26 @@
     <string name="root_remove">Прибрати з пошуку</string>
     <string name="root_empty">Альбомів немає</string>
     <string name="root_missing">Папку не знайдено</string>
+    <string name="to_trash">У кошик</string>
+    <string name="trash_empty">Кошик порожній</string>
+    <string name="restore">Відновити</string>
+    <string name="delete_forever">Видалити назавжди</string>
+    <string name="restore_all">Відновити все</string>
+    <string name="restore_all_confirm">Усе з кошика повернеться на свої місця</string>
+    <string name="empty_trash">Очистити</string>
+    <string name="empty_trash_confirm">Усе в кошику буде видалено назавжди</string>
+    <string name="delete_failed">Не вдалося видалити</string>
+    <string name="restore_exists">На попередньому місці вже є файл із такою назвою</string>
+    <string name="restore_failed">Не вдалося відновити</string>
+    <string name="restore_some_left">Частина файлів лишилася в кошику: їхні назви зайняті</string>
+    <string name="setting_trash_days">Зберігати в кошику</string>
+    <string name="ok">ОК</string>
+    <plurals name="days">
+        <item quantity="one">%1$d день</item>
+        <item quantity="few">%1$d дні</item>
+        <item quantity="many">%1$d днів</item>
+        <item quantity="other">%1$d дня</item>
+    </plurals>
     <plurals name="file_count">
         <item quantity="one">%1$s файл</item>
         <item quantity="few">%1$s файли</item>

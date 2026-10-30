@@ -26,6 +26,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -34,6 +35,7 @@ import xx.photobox.AppSettings
 import xx.photobox.MediaRotation
 import xx.photobox.R
 import xx.photobox.SLIDE_SECONDS
+import xx.photobox.TRASH_DAYS
 import xx.photobox.ThemeMode
 import xx.photobox.VideoPlayer
 import xx.photobox.currentLanguageTag
@@ -42,9 +44,9 @@ import xx.photobox.supportedLanguages
 import kotlin.math.roundToInt
 
 /** Which editor is open; only one can be at a time. */
-private enum class Editing { NONE, THEME, ACCENT, LANGUAGE, PLAYER, ROTATION }
+private enum class Editing { NONE, THEME, ACCENT, LANGUAGE, PLAYER, ROTATION, TRASH }
 
-/** Theme, accent colour, language, the start-up update check, whether hidden albums are listed, the video player, the slideshow's pace and when photos turn. */
+/** Theme, accent colour, language, the start-up update check, whether hidden albums are listed, the video player, the slideshow's pace, when photos turn and how long the trash keeps a file. */
 @Composable
 fun SettingsScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
@@ -55,6 +57,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     val videoPlayer by AppSettings.videoPlayer.collectAsState()
     val slideSeconds by AppSettings.slideSeconds.collectAsState()
     val mediaRotation by AppSettings.mediaRotation.collectAsState()
+    val trashDays by AppSettings.trashDays.collectAsState()
 
     val systemLabel = stringResource(R.string.language_system)
     val languages = remember(context, systemLabel) { supportedLanguages(context, systemLabel) }
@@ -117,6 +120,12 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         )
         HorizontalDivider()
         SlideTimeRow(slideSeconds) { AppSettings.setSlideSeconds(context, it) }
+        HorizontalDivider()
+        SettingRow(
+            label = stringResource(R.string.setting_trash_days),
+            value = pluralStringResource(R.plurals.days, trashDays, trashDays),
+            onClick = { editing = Editing.TRASH },
+        )
     }
 
     when (editing) {
@@ -181,6 +190,18 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
             onDismiss = { editing = Editing.NONE },
             onPick = {
                 AppSettings.setMediaRotation(context, it)
+                editing = Editing.NONE
+            },
+        )
+
+        Editing.TRASH -> ChoiceDialog(
+            title = stringResource(R.string.setting_trash_days),
+            options = TRASH_DAYS,
+            selected = trashDays,
+            label = { pluralStringResource(R.plurals.days, it, it) },
+            onDismiss = { editing = Editing.NONE },
+            onPick = {
+                AppSettings.setTrashDays(context, it)
                 editing = Editing.NONE
             },
         )

@@ -1,5 +1,6 @@
 package xx.photobox.ui
 
+import android.widget.Toast
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,6 +39,7 @@ import xx.photobox.AppSettings
 import xx.photobox.GalleryViewModel
 import xx.photobox.ItemOrder
 import xx.photobox.R
+import xx.photobox.TrashNotice
 import xx.photobox.isVideo
 import xx.photobox.sortItems
 
@@ -72,6 +74,7 @@ fun MainScreen(
     var menuOpen by remember { mutableStateOf(false) }
     var choosingOrder by remember { mutableStateOf(false) }
     var addMenuOpen by remember { mutableStateOf(false) }
+    var confirmTrash by remember { mutableStateOf<TrashStep?>(null) }
     val roots by AppSettings.roots.collectAsState()
     var choosingItemOrder by remember { mutableStateOf(false) }
     // The file open full screen, by path: the list under it can be reloaded
@@ -89,6 +92,13 @@ fun MainScreen(
 
     LaunchedEffect(screen) {
         if (screen == Screen.ALBUMS) vm.scanAlbums()
+        if (screen == Screen.TRASH) vm.loadTrash()
+    }
+    vm.trashNotice?.let { notice ->
+        LaunchedEffect(notice) {
+            Toast.makeText(context, notice.messageRes(), Toast.LENGTH_SHORT).show()
+            vm.noticeShown()
+        }
     }
     LaunchedEffect(vm.album, vm.hasStorageAccess) { vm.loadItems() }
 
@@ -167,8 +177,29 @@ fun MainScreen(
                 )
             }
 
-            Screen.TRASH -> AppScreen(title = stringResource(R.string.trash), onBack = backToThumbnails) {
-                EmptyState(icon = null, title = stringResource(R.string.not_ready))
+            Screen.TRASH -> AppScreen(
+                title = stringResource(R.string.trash),
+                onBack = backToThumbnails,
+                actions = {
+                    val filled = !vm.trashBusy && !vm.trashEntries.isNullOrEmpty()
+                    LargeIconButton(
+                        Icons.Filled.RestoreFromTrash,
+                        stringResource(R.string.restore_all),
+                        { confirmTrash = TrashStep.RESTORE_ALL },
+                        enabled = filled,
+                    )
+                    DialogConfirmButton(stringResource(R.string.empty_trash), danger = true, enabled = filled) {
+                        confirmTrash = TrashStep.EMPTY
+                    }
+                },
+            ) {
+                TrashScreen(
+                    entries = vm.trashEntries,
+                    busy = vm.trashBusy,
+                    onRestore = vm::restore,
+                    onPurge = vm::purge,
+                    modifier = Modifier.weight(1f),
+                )
             }
 
             Screen.SETTINGS -> AppScreen(
@@ -268,6 +299,16 @@ fun MainScreen(
                             sorted = sorted,
                             startPath = open,
                             onPage = { viewerPath = it },
+                            onDelete = { item ->
+                                // One at a time: a second tap while the first is under way does nothing.
+                                if (!vm.trashBusy) {
+                                    // On to a neighbour first, so the viewer opens on it once
+                                    // the album has been read again without this file.
+                                    val at = sorted.indexOf(item)
+                                    viewerPath = (sorted.getOrNull(at + 1) ?: sorted.getOrNull(at - 1))?.file?.path
+                                    vm.moveToTrash(item.file) { moved -> if (!moved) viewerPath = item.file.path }
+                                }
+                            },
                             onClose = { viewerPath = null },
                         )
                     }
@@ -284,6 +325,21 @@ fun MainScreen(
                 }
             }
         }
+    }
+
+    confirmTrash?.let { step ->
+        ConfirmDialog(
+            title = stringResource(if (step == TrashStep.EMPTY) R.string.empty_trash else R.string.restore_all),
+            message = stringResource(
+                if (step == TrashStep.EMPTY) R.string.empty_trash_confirm else R.string.restore_all_confirm,
+            ),
+            danger = step == TrashStep.EMPTY,
+            onDismiss = { confirmTrash = null },
+            onConfirm = {
+                confirmTrash = null
+                if (step == TrashStep.EMPTY) vm.emptyTrash() else vm.restoreAll()
+            },
+        )
     }
 
     slideshowResume?.let { at ->
@@ -344,6 +400,16 @@ fun MainScreen(
             )
         }
     }
+}
+
+/** A step on the whole trash, waiting on its OK. */
+private enum class TrashStep { RESTORE_ALL, EMPTY }
+
+private fun TrashNotice.messageRes(): Int = when (this) {
+    TrashNotice.DELETE_FAILED -> R.string.delete_failed
+    TrashNotice.RESTORE_EXISTS -> R.string.restore_exists
+    TrashNotice.RESTORE_FAILED -> R.string.restore_failed
+    TrashNotice.RESTORE_SOME_LEFT -> R.string.restore_some_left
 }
 
 private fun ItemOrder.labelRes(): Int = when (this) {

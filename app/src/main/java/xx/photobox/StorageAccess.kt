@@ -2,6 +2,7 @@ package xx.photobox
 
 import android.content.Context
 import android.content.Intent
+import android.media.MediaScannerConnection
 import android.os.Environment
 import android.os.storage.StorageManager
 import android.provider.Settings
@@ -50,3 +51,12 @@ fun defaultRoots(): List<String> = listOf(Environment.DIRECTORY_DCIM, Environmen
 
 /** Where a new album goes unless another folder is picked, when there is no search root to put it in. */
 fun defaultAlbumParent(): File = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+
+/**
+ * Tells the system's media index that [paths] changed — a file trashed,
+ * restored, moved or gone. Other galleries read that index, not the files, and
+ * without this keep showing a photo where it was until the system scans by itself.
+ */
+fun announceChanged(context: Context, paths: List<String>) {
+    if (paths.isNotEmpty()) MediaScannerConnection.scanFile(context, paths.toTypedArray(), null, null)
+}

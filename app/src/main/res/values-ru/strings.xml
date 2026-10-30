@@ -12,7 +12,6 @@
     <string name="slideshow">Слайд-шоу</string>
     <string name="settings">Настройки</string>
     <string name="about">О программе</string>
-    <string name="not_ready">Ещё не готово</string>
     <string name="cancel">Отмена</string>
     <string name="setting_theme">Тема</string>
     <string name="setting_accent">Цвет</string>
@@ -81,6 +80,26 @@
     <string name="root_remove">Убрать из поиска</string>
     <string name="root_empty">Альбомов нет</string>
     <string name="root_missing">Папка не найдена</string>
+    <string name="to_trash">В корзину</string>
+    <string name="trash_empty">Корзина пуста</string>
+    <string name="restore">Восстановить</string>
+    <string name="delete_forever">Удалить навсегда</string>
+    <string name="restore_all">Восстановить всё</string>
+    <string name="restore_all_confirm">Всё из корзины вернётся на свои места</string>
+    <string name="empty_trash">Очистить</string>
+    <string name="empty_trash_confirm">Всё в корзине будет удалено навсегда</string>
+    <string name="delete_failed">Не удалось удалить</string>
+    <string name="restore_exists">На прежнем месте уже есть файл с таким именем</string>
+    <string name="restore_failed">Не удалось восстановить</string>
+    <string name="restore_some_left">Часть файлов осталась в корзине: их имена заняты</string>
+    <string name="setting_trash_days">Хранить в корзине</string>
+    <string name="ok">ОК</string>
+    <plurals name="days">
+        <item quantity="one">%1$d день</item>
+        <item quantity="few">%1$d дня</item>
+        <item quantity="many">%1$d дней</item>
+        <item quantity="other">%1$d дня</item>
+    </plurals>
     <plurals name="file_count">
         <item quantity="one">%1$s файл</item>
         <item quantity="few">%1$s файла</item>

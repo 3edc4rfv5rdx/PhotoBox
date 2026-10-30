@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -266,6 +267,32 @@ fun AppMenuItem(text: String, enabled: Boolean = true, onClick: () -> Unit) {
         text = { Text(text, style = MaterialTheme.typography.titleLarge) },
         enabled = enabled,
         onClick = onClick,
+    )
+}
+
+/** A dialog's body text: a size up from Material's 14sp, since it is what the dialog is there to say. */
+@Composable
+private fun dialogBodyStyle() = MaterialTheme.typography.bodyLarge.copy(fontSize = 18.sp, lineHeight = 24.sp)
+
+/**
+ * OK/Cancel before a step worth a second thought: the message says what is
+ * about to happen, so the buttons can stay the same everywhere. [danger]
+ * paints OK red, for a step that cannot be undone.
+ */
+@Composable
+fun ConfirmDialog(
+    title: String,
+    message: String,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+    danger: Boolean = true,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = { Text(message, style = dialogBodyStyle(), modifier = Modifier.verticalScroll(rememberScrollState())) },
+        confirmButton = { DialogConfirmButton(stringResource(R.string.ok), danger = danger, onClick = onConfirm) },
+        dismissButton = { DialogDismissButton(stringResource(R.string.cancel), onDismiss) },
     )
 }
 
