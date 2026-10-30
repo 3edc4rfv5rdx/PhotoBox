@@ -9,6 +9,9 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
 
+/** How often progress counted on worker threads is shown. */
+const val PROGRESS_TICK_MS = 100L
+
 /** EXIF reads run a few at a time: enough to overlap the waits on storage, not so many they fight over it. */
 private val dateReader = Dispatchers.IO.limitedParallelism(4)
 

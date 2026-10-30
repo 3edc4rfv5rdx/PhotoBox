@@ -7,17 +7,24 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import xx.photobox.AppSettings
 import xx.photobox.MediaItem
+import xx.photobox.PROGRESS_TICK_MS
 import xx.photobox.R
 import xx.photobox.dateCache
 import xx.photobox.displayNameOf
@@ -41,10 +48,24 @@ private class Opened(val items: List<MediaItem>, val start: String)
 @Composable
 fun OpenedFileScreen(uri: Uri, onClose: () -> Unit) {
     val context = LocalContext.current
-    val opened by produceState<Opened?>(initialValue = null, uri) { value = open(context, uri) }
+    // Dates read in the folder so far, counted on the reading threads and shown from here.
+    val done = remember { AtomicInteger(0) }
+    var total by remember { mutableIntStateOf(0) }
+    var shownDone by remember { mutableIntStateOf(0) }
+    val opened by produceState<Opened?>(initialValue = null, uri) { value = open(context, uri, done) { total = it } }
     val shown = opened
+    LaunchedEffect(shown == null) {
+        if (shown != null) return@LaunchedEffect
+        while (true) {
+            shownDone = done.get()
+            delay(PROGRESS_TICK_MS)
+        }
+    }
     when {
-        shown == null -> Box(Modifier.fillMaxSize().background(Color.Black)) { ProgressState(text = null) }
+        // White on the viewer's black, whatever the theme.
+        shown == null -> Box(Modifier.fillMaxSize().background(Color.Black)) {
+            CompositionLocalProvider(LocalContentColor provides Color.White) { ReadingDates(shownDone, total) }
+        }
 
         shown.items.isEmpty() -> LaunchedEffect(Unit) {
             Toast.makeText(context, R.string.open_failed, Toast.LENGTH_SHORT).show()
@@ -65,10 +86,11 @@ fun OpenedFileScreen(uri: Uri, onClose: () -> Unit) {
     }
 }
 
-private suspend fun open(context: Context, uri: Uri): Opened {
+/** [uri] found on storage with its folder, or copied in; [done] and [onToRead] count the folder's dates being read. */
+private suspend fun open(context: Context, uri: Uri, done: AtomicInteger, onToRead: (Int) -> Unit): Opened {
     val onStorage = withContext(Dispatchers.IO) { if (hasAllFilesAccess()) fileFromUri(context, uri) else null }
     val file = onStorage ?: withContext(Dispatchers.IO) { copyIn(context, uri) } ?: return Opened(emptyList(), "")
-    val folder = onStorage?.parentFile?.let { readItems(it, dateCache(context), AtomicInteger()) {} }.orEmpty()
+    val folder = onStorage?.parentFile?.let { readItems(it, dateCache(context), done, onToRead) }.orEmpty()
     // A file the gallery does not list — an extension it does not know — is still shown, alone among the rest.
     val items = if (folder.any { it.file.path == file.path }) {
         folder

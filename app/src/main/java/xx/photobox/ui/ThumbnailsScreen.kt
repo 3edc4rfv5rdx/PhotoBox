@@ -109,14 +109,7 @@ fun ThumbnailsScreen(
     modifier: Modifier = Modifier,
 ) {
     if (sorted == null) {
-        if (datesTotal > 0) {
-            ProgressState(
-                text = stringResource(R.string.reading_dates, formatCount(datesDone), formatCount(datesTotal)),
-                progress = { datesDone.toFloat() / datesTotal },
-            )
-        } else {
-            ProgressState(text = null)
-        }
+        ReadingDates(datesDone, datesTotal)
         return
     }
     if (sorted.isEmpty()) {
@@ -212,6 +205,19 @@ fun ThumbnailsScreen(
         }
 
         FastScroller(state = gridState, label = { index -> scrollLabel(context, entries, index, order) })
+    }
+}
+
+/** A folder's files being read: how many dates of how many, once some must be read, a spinner before that. */
+@Composable
+internal fun ReadingDates(done: Int, total: Int) {
+    if (total > 0) {
+        ProgressState(
+            text = stringResource(R.string.reading_dates, formatCount(done), formatCount(total)),
+            progress = { done.toFloat() / total },
+        )
+    } else {
+        ProgressState(text = null)
     }
 }
 

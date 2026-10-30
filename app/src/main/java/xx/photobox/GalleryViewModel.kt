@@ -24,7 +24,6 @@ internal fun sameItems(old: List<MediaItem>?, new: List<MediaItem>): Boolean {
     return new.all { item -> byPath[item.file.path]?.let { it.taken == item.taken && it.size == item.size } == true }
 }
 
-private const val PROGRESS_TICK_MS = 100L
 
 /** A new album being named: what is typed so far and the folder it goes into. */
 data class AlbumDraft(val name: String, val parent: File)
