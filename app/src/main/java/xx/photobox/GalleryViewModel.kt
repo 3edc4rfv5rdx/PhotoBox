@@ -312,7 +312,8 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
             val ok = changingFiles {
                 withContext(Dispatchers.IO) {
                     val before = dir.listFiles().orEmpty().map { it.path }
-                    dir.renameTo(renamed).also { ok ->
+                    // Checked again right before: a folder of that name may have come since the dialog looked.
+                    (checkAlbumRename(dir, name) == NameCheck.OK && dir.renameTo(renamed)).also { ok ->
                         if (ok) announceChanged(getApplication(), before + renamed.listFiles().orEmpty().map { it.path })
                     }
                 }
@@ -464,8 +465,8 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         changing = true
         viewModelScope.launch {
             val renamed = changingFiles { withContext(Dispatchers.IO) {
-                val moves = renameTargets(file, base.trim())
-                if (renameAll(moves.map { it.first }, moves.map { it.second })) {
+                val moves = renameGroup(file, base)
+                if (moves != null) {
                     announceChanged(getApplication(), moves.flatMap { (from, to) -> listOf(from.path, to.path) })
                     // The slideshow stopped on it goes on from it under its new name.
                     val app = getApplication<Application>()

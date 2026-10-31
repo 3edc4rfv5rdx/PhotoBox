@@ -199,4 +199,28 @@ class FileOpsTest {
             it.appendText(" turned")
         }
     }
+
+    // ---------- Renaming ----------
+
+    @Test
+    fun aRenameOntoANameTakenSinceTheDialogMovesNothing() {
+        val photo = file("A/p.jpg", text = "mine")
+        val raw = file("A/p.dng", text = "my raw")
+        // Came after the dialog said the name was free.
+        val come = file("A/trip.dng", text = "theirs")
+        assertNull(renameGroup(photo, "trip"))
+        assertEquals("mine", photo.readText())
+        assertEquals("my raw", raw.readText())
+        assertEquals("theirs", come.readText())
+        assertFalse(File(tmp.root, "A/trip.jpg").exists())
+    }
+
+    @Test
+    fun aRenameMovesThePhotoAndItsRaw() {
+        val photo = file("A/p.jpg")
+        file("A/p.dng")
+        val moves = renameGroup(photo, " trip ")!!
+        assertEquals(listOf("trip.jpg", "trip.dng"), moves.map { it.second.name })
+        assertTrue(moves.all { it.second.exists() && !it.first.exists() })
+    }
 }

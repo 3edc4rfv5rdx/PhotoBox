@@ -38,6 +38,18 @@ fun renameTargets(file: File, base: String): List<Pair<File, File>> =
     }
 
 /**
+ * [file] and its companions renamed to [base], all or none; the moves made,
+ * or null when nothing moved. The name is checked again right before, not
+ * left to the dialog that offered it: a rename replaces a file already there
+ * without a word, and one may have come since the dialog last looked.
+ */
+fun renameGroup(file: File, base: String): List<Pair<File, File>>? {
+    if (checkRename(file, base) != NameCheck.OK) return null
+    val moves = renameTargets(file, base.trim())
+    return moves.takeIf { renameAll(it.map { m -> m.first }, it.map { m -> m.second }) }
+}
+
+/**
  * Whether [file] can be renamed to [base], the name without its extension.
  * Leading and trailing spaces do not count. A target that is the very file
  * renamed — a change of case on storage that ignores case — is no clash.
