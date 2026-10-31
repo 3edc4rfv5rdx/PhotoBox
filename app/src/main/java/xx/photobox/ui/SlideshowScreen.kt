@@ -81,8 +81,8 @@ private class Slide(val path: String, val bitmap: Bitmap)
  * and faded into the next in the middle of the screen. After the last it
  * stops: the app's icon goes up over that photo, the controls stay up, and
  * Play starts it over from the first; [onEnded] hears it got there. The screen
- * stays on and the system bars are hidden while it runs. A tap shows the
- * controls — back to leave at the top; previous, the show's menu, info, pause
+ * stays on and the system bars are hidden while it runs. The controls are up
+ * at the start, and a tap shows them again — back to leave at the top; previous, the show's menu, info, pause
  * or go on and next in a block at the bottom — which hide again a few
  * seconds after the last touch; Back stops it too. The menu shuffles the
  * whole album from the photo up, each photo once, and repeats the show round
@@ -129,7 +129,8 @@ fun SlideshowScreen(
     var info by remember { mutableStateOf<String?>(null) }
     // Just gone on from a pause: the photo up has been looked at long enough already.
     var resuming by remember { mutableStateOf(false) }
-    var controls by remember { mutableStateOf(false) }
+    // Up from the start, so the show's menu is at hand before the first photo moves on.
+    var controls by remember { mutableStateOf(true) }
     // Counted up with each touch of the controls, so their hiding starts over.
     var touched by remember { mutableIntStateOf(0) }
     var shown by remember { mutableStateOf<Slide?>(null) }
