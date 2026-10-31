@@ -8,8 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -77,7 +75,7 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
     var updateCheck by remember { mutableStateOf(Updater.isEnabled(context)) }
 
     Column(
-        modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        modifier = modifier.fillMaxSize().verticalScrollByAny().padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         SettingRow(

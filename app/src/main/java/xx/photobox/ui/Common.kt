@@ -26,11 +26,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -364,7 +362,7 @@ fun ConfirmDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
-        text = { Text(message, style = dialogBodyStyle(), modifier = Modifier.verticalScroll(rememberScrollState())) },
+        text = { Text(message, style = dialogBodyStyle(), modifier = Modifier.verticalScrollByAny()) },
         confirmButton = { DialogConfirmButton(stringResource(R.string.ok), danger = danger, onClick = onConfirm) },
         dismissButton = { DialogDismissButton(stringResource(R.string.cancel), onDismiss) },
     )
@@ -384,7 +382,7 @@ fun <T> ChoiceDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
-            Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+            Column(modifier = Modifier.verticalScrollByAny()) {
                 options.forEach { option ->
                     Row(
                         modifier = Modifier

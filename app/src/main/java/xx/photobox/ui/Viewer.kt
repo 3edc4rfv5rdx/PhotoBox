@@ -182,7 +182,7 @@ fun ViewerScreen(
                 userScrollEnabled = !zoomed,
                 reverseLayout = rotation == 270,
                 key = { sorted[it].file.path },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().mouseDragPages(pagerState, vertical = true, reverseLayout = rotation == 270, enabled = !zoomed),
                 pageContent = pageContent,
             )
 
@@ -192,7 +192,7 @@ fun ViewerScreen(
                 userScrollEnabled = !zoomed,
                 reverseLayout = rotation == 180,
                 key = { sorted[it].file.path },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().mouseDragPages(pagerState, vertical = false, reverseLayout = rotation == 180, enabled = !zoomed),
                 pageContent = pageContent,
             )
         }

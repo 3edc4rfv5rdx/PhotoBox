@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -93,7 +94,8 @@ fun FolderPickerScreen(start: File?, onPick: (File) -> Unit, modifier: Modifier 
         }
 
         if (current == null) {
-            LazyColumn(Modifier.weight(1f)) {
+            val rootsState = rememberLazyListState()
+            LazyColumn(Modifier.weight(1f).mouseDragScroll(rootsState), state = rootsState) {
                 items(roots, key = { it.dir.path }) { root ->
                     FolderRow(name = root.label) { path = root.dir.path }
                     HorizontalDivider()
@@ -117,7 +119,8 @@ fun FolderPickerScreen(start: File?, onPick: (File) -> Unit, modifier: Modifier 
                     Text(stringResource(R.string.folder_no_subfolders))
                 }
             } else {
-                LazyColumn(Modifier.weight(1f)) {
+                val listState = rememberLazyListState()
+                LazyColumn(Modifier.weight(1f).mouseDragScroll(listState), state = listState) {
                     items(listed, key = { it.path }) { child ->
                         FolderRow(name = child.name) { path = child.path }
                         HorizontalDivider()

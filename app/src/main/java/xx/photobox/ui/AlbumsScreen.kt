@@ -100,7 +100,7 @@ fun AlbumsScreen(
 
             else -> {
                 if (scanning) LinearProgressIndicator(Modifier.fillMaxWidth())
-                LazyColumn(Modifier.weight(1f), state = listState) {
+                LazyColumn(Modifier.weight(1f).mouseDragScroll(listState), state = listState) {
                     // Laid out line for line as listIndexOf counts them.
                     for ((root, rootAlbums) in sections) {
                         item(key = "root:${root.path}") {

@@ -150,7 +150,7 @@ fun ThumbnailsScreen(
             columns = GridCells.Fixed(columns),
             state = gridState,
             contentPadding = PaddingValues(bottom = CELL_GAP),
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().mouseDragScroll(gridState),
         ) {
             items(
                 entries,

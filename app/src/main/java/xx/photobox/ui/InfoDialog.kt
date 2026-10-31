@@ -7,8 +7,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -57,7 +55,7 @@ fun InfoDialog(file: File, onDismiss: () -> Unit, shownAs: File = file) {
                 ProgressState(text = null, modifier = Modifier.fillMaxWidth())
             } else {
                 Column(
-                    Modifier.verticalScroll(rememberScrollState()),
+                    Modifier.verticalScrollByAny(),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     InfoLine(stringResource(R.string.info_name), shownAs.name)

@@ -97,7 +97,7 @@ fun TrashScreen(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
         )
         if (busy) LinearProgressIndicator(Modifier.fillMaxWidth()) else HorizontalDivider()
-        LazyColumn(Modifier.weight(1f), state = listState) {
+        LazyColumn(Modifier.weight(1f).mouseDragScroll(listState), state = listState) {
             items(listed, key = { it.file.path }) { entry ->
                 TrashRow(
                     entry = entry,
