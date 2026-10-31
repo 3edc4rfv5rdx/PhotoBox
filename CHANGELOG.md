@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A move onto the SD card deletes the originals only once the copies are really written to the card
 - N: The slideshow's ⚙ can fill the screen round each photo with a heavy, dimmed blur of it
 - E: The slideshow fades from photo to photo, and moves them, even with the phone's animations turned off
 - N: The slideshow's ⚙ can zoom and drift each photo slowly, a random way each time
