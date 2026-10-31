@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
-    <!-- Every path: a video can be anywhere on internal storage or an SD card. -->
-    <root-path name="root" path="." />
+    <!-- The storage volumes, internal and SD cards alike: a photo or video can be
+         anywhere on them. Not the whole file system: the app's own files stay its own. -->
+    <root-path name="storage" path="storage/" />
+    <!-- A file another app handed over that had to be copied in to be shown. -->
+    <cache-path name="opened" path="opened/" />
 </paths>

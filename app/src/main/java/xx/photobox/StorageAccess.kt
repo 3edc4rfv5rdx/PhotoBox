@@ -76,7 +76,9 @@ private const val EXTERNAL_STORAGE_DOCUMENTS = "com.android.externalstorage.docu
  * read: a file URI, the system's own storage documents ("primary:DCIM/x.jpg",
  * "1A2B-3C4D:DCIM/x.jpg"), the media library's path for its entries, or a
  * path inside a URI that carries one whole, as many file managers' do. Null
- * otherwise — the file is then read through [uri] itself.
+ * otherwise — the file is then read through [uri] itself. Only a file on a
+ * storage volume is taken: a provider's path is its word alone, and one
+ * pointing into the app's own files would have them shown, and shared on.
  */
 fun fileFromUri(context: Context, uri: Uri): File? {
     val candidates = sequence {
@@ -103,7 +105,17 @@ fun fileFromUri(context: Context, uri: Uri): File? {
             }
         }
     }
-    return candidates.firstOrNull { it.isFile && it.canRead() }
+    val roots = storageRoots(context).map { it.dir }
+    return candidates.firstOrNull { it.isFile && it.canRead() && isOnStorage(it, roots) }
+}
+
+/** Whether [file], its ".." and links resolved, lies inside one of the storage volumes [roots]. */
+fun isOnStorage(file: File, roots: List<File>): Boolean {
+    val path = runCatching { file.canonicalPath }.getOrNull() ?: return false
+    return roots.any { root ->
+        val top = runCatching { root.canonicalPath }.getOrNull()?.trimEnd('/') ?: return@any false
+        top.isNotEmpty() && path.startsWith("$top/")
+    }
 }
 
 /** The path the media library or a provider like it gives for [uri], if any. Deprecated as a column, still filled in. */
