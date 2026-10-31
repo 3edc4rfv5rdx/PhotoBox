@@ -82,8 +82,9 @@ private class Slide(val path: String, val bitmap: Bitmap)
  * stops: the app's icon goes up over that photo, the controls stay up, and
  * Play starts it over from the first; [onEnded] hears it got there. The screen
  * stays on and the system bars are hidden while it runs. The controls are up
- * at the start, and a tap shows them again — back to leave at the top; previous, the show's menu, info, pause
- * or go on and next in a block at the bottom — which hide again a few
+ * at the start, and a tap shows them again — back to leave at the top;
+ * previous, the show's menu, pause or go on, info and next in a block at
+ * the bottom — which hide again a few
  * seconds after the last touch; Back stops it too. The menu shuffles the
  * whole album from the photo up, each photo once, and repeats the show round
  * and round, a new shuffle each round; both start off every time. Going on
@@ -274,7 +275,7 @@ fun SlideshowScreen(
                     Modifier.align(Alignment.TopStart),
                 )
                 // A compact block, not the screen's width: the buttons sit close
-                // under one thumb, the middle pair a little further apart.
+                // under one thumb, play in the middle a little further apart.
                 Row(
                     Modifier
                         .align(Alignment.BottomCenter)
@@ -309,13 +310,6 @@ fun SlideshowScreen(
                             }
                         }
                     }
-                    Spacer(Modifier.width(CONTROLS_GAP))
-                    LargeIconButton(
-                        Icons.Outlined.Info,
-                        stringResource(R.string.info),
-                        touch { info = shown?.path },
-                        tint = Color.White,
-                    )
                     Spacer(Modifier.width(CONTROLS_MIDDLE_GAP))
                     LargeIconButton(
                         if (paused || ended) Icons.Filled.PlayArrow else Icons.Filled.Pause,
@@ -327,6 +321,13 @@ fun SlideshowScreen(
                             },
                         ),
                         touch(::playPause),
+                        tint = Color.White,
+                    )
+                    Spacer(Modifier.width(CONTROLS_MIDDLE_GAP))
+                    LargeIconButton(
+                        Icons.Outlined.Info,
+                        stringResource(R.string.info),
+                        touch { info = shown?.path },
                         tint = Color.White,
                     )
                     Spacer(Modifier.width(CONTROLS_GAP))
