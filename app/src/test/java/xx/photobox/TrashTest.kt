@@ -99,8 +99,49 @@ class TrashTest {
     fun aRecordWhoseFileIsGoneIsDropped() {
         Trash.moveToTrash(file("A/a.jpg"), trash, now = 3)
         File(trash, "3.jpg").delete()
+        File(trash, "3.path").setLastModified(System.currentTimeMillis() - TRASH_RECORD_GRACE_MS - 1000)
         assertTrue(list().isEmpty())
         assertFalse(File(trash, "3.path").exists())
+    }
+
+    @Test
+    fun aListingBetweenTheRecordAndTheRenameLeavesTheEntryWhole() {
+        val photo = file("A/a.jpg", "photo")
+        assertTrue(Trash.moveToTrash(photo, trash, now = 4))
+        // As it was a moment earlier: the record written, the file not renamed in yet.
+        val stored = File(trash, "4.jpg")
+        val waiting = File(tmp.root, "waiting.jpg")
+        assertTrue(stored.renameTo(waiting))
+        assertTrue(list().isEmpty())
+        assertTrue(File(trash, "4.path").exists())
+        assertTrue(waiting.renameTo(stored))
+        val entry = list().single()
+        assertEquals(photo, entry.original)
+        assertEquals(RestoreResult.OK, Trash.restore(entry))
+        assertEquals("photo", photo.readText())
+    }
+
+    @Test
+    fun aFileWithNoRecordIsListedAndGoesBackToRestored() {
+        file("$TRASH_PATH/.nomedia")
+        file("$TRASH_PATH/42-c1.dng", "raw")
+        val entry = list().single()
+        assertEquals(File(trash, "42-c1.dng"), entry.file)
+        assertEquals(42L, entry.deletedAt)
+        val back = File(tmp.root, "$TRASH_ORPHAN_RESTORE_PATH/42-c1.dng")
+        assertEquals(back, entry.original)
+        assertEquals(RestoreResult.OK, Trash.restore(entry))
+        assertEquals("raw", back.readText())
+        assertTrue(list().isEmpty())
+    }
+
+    @Test
+    fun aFileWithNoRecordIsPurgedWithItsTime() {
+        file("$TRASH_PATH/42.jpg")
+        Trash.moveToTrash(file("A/kept.jpg"), trash, now = 900)
+        assertEquals(1, Trash.purgeOlderThan(listOf(trash), cutoff = 500))
+        assertFalse(File(trash, "42.jpg").exists())
+        assertEquals(listOf("kept.jpg"), list().map { it.original.name })
     }
 
     @Test

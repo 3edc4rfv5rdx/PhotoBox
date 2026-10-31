@@ -7,6 +7,16 @@ import java.nio.file.Files
 const val TRASH_PATH = "Documents/PhotoBox/.Trash"
 
 /**
+ * How old a record whose file is missing must be before a listing drops it.
+ * A trashing writes its record first and renames the file in after: a younger
+ * record may still be waiting for its file.
+ */
+const val TRASH_RECORD_GRACE_MS = 10 * 60 * 1000L
+
+/** Where a file found in a trash with no record goes back to, on its own volume: nothing says where it came from. */
+const val TRASH_ORPHAN_RESTORE_PATH = "Pictures/Restored"
+
+/**
  * The folder the trash used to be, one inside every folder something was
  * deleted from. Read only to carry what is in them over to [TRASH_PATH].
  */
@@ -101,27 +111,64 @@ object Trash {
         return id
     }
 
-    /** Every entry in [trashDirs], newest first. A record whose file is gone is dropped on the way. */
-    fun list(trashDirs: List<File>): List<TrashEntry> =
-        trashDirs.flatMap { dir ->
-            dir.listFiles { f -> f.isFile && f.name.endsWith(RECORD_SUFFIX) }.orEmpty().mapNotNull(::readEntry)
-        }.sortedByDescending { it.deletedAt }
+    /**
+     * Every entry in [trashDirs], newest first. A record whose file has been
+     * gone longer than [TRASH_RECORD_GRACE_MS] at [now] is dropped on the way;
+     * a younger one is passed over, since its file may be on its way in. A file
+     * that no record names is listed too, to go back to [TRASH_ORPHAN_RESTORE_PATH].
+     */
+    fun list(trashDirs: List<File>, now: Long = System.currentTimeMillis()): List<TrashEntry> =
+        trashDirs.flatMap { dir -> listDir(dir, now) }.sortedByDescending { it.deletedAt }
 
-    private fun readEntry(record: File): TrashEntry? {
-        val dir = record.parentFile ?: return null
-        val id = record.name.removeSuffix(RECORD_SUFFIX)
-        val deletedAt = id.substringBefore('-').toLongOrNull() ?: return null
+    private fun listDir(dir: File, now: Long): List<TrashEntry> {
+        // The files are looked at before the records are read: a record is whole
+        // before its files are renamed in, so every file seen here that a record
+        // names is named by the time that record is read.
+        val seen = dir.listFiles().orEmpty().filter { it.isFile && !it.name.startsWith(".") }
+        val (records, files) = seen.partition { it.name.endsWith(RECORD_SUFFIX) }
+        val read = records.map { readRecord(it) }
+        val entries = read.mapNotNull { (record, lines) -> entryOf(record, lines, now) }
+        val named = read.flatMap { (_, lines) -> lines.map { it.first.name } }.toHashSet()
+        // Still there after the records were read: not one a restore or a purge has just taken out.
+        val orphans = files.filter { it.name !in named && it.exists() }.map { orphanEntry(it, dir) }
+        return entries + orphans
+    }
+
+    /** The lines of [record]: each stored file with the path it came from; none when it cannot be read. */
+    private fun readRecord(record: File): Pair<File, List<Pair<File, File>>> {
+        val dir = record.parentFile ?: return record to emptyList()
         val lines = runCatching { record.readLines() }.getOrNull()
             ?.mapNotNull { line -> line.split('\t', limit = 2).takeIf { it.size == 2 } }
             ?.map { (stored, original) -> File(dir, stored) to File(original) }
             .orEmpty()
+        return record to lines
+    }
+
+    private fun entryOf(record: File, lines: List<Pair<File, File>>, now: Long): TrashEntry? {
+        val id = record.name.removeSuffix(RECORD_SUFFIX)
+        val deletedAt = id.substringBefore('-').toLongOrNull() ?: return null
         val (item, original) = lines.firstOrNull() ?: return null
         if (!item.exists()) {
-            // Its file was deleted by hand: nothing is left to restore.
-            record.delete()
+            // Its file was deleted by hand: nothing is left to restore. Unless it
+            // is young, and the file not renamed in yet.
+            if (now - record.lastModified() >= TRASH_RECORD_GRACE_MS) record.delete()
             return null
         }
         return TrashEntry(item, record, original, deletedAt, lines.drop(1).filter { it.first.exists() })
+    }
+
+    /**
+     * A file in [dir] that no record names, left so by an older build: shown
+     * under its stored name, deleted when its stem's time is past, and put back
+     * in [TRASH_ORPHAN_RESTORE_PATH] on its volume. It has no record, and the
+     * one it is given is a name no record can have, so a restore or a purge
+     * deleting it touches nothing.
+     */
+    private fun orphanEntry(file: File, dir: File): TrashEntry {
+        val volume = if (dir.path.endsWith("/$TRASH_PATH")) File(dir.path.removeSuffix("/$TRASH_PATH")) else dir.parentFile ?: dir
+        val deletedAt = file.nameWithoutExtension.substringBefore('-').toLongOrNull() ?: file.lastModified()
+        val record = File(dir, ".no-record-${file.name}")
+        return TrashEntry(file, record, File(File(volume, TRASH_ORPHAN_RESTORE_PATH), file.name), deletedAt, emptyList())
     }
 
     /**
