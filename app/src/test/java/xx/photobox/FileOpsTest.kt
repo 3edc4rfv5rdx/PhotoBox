@@ -163,4 +163,40 @@ class FileOpsTest {
         assertEquals(0, sync.calls)
         assertTrue(photo.exists() && target.exists())
     }
+
+    // ---------- Turning a photo ----------
+
+    @Test
+    fun aTurnThatFailsLeavesThePhotoAsItWas() {
+        val photo = file("A/p.jpg", text = "original bytes")
+        assertFalse(
+            rotateClockwise(photo) {
+                // Cut short halfway through writing, as a kill would leave it.
+                it.writeText("half")
+                throw java.io.IOException("killed midway")
+            },
+        )
+        assertEquals("original bytes", photo.readText())
+        assertEquals(1_000_000L, photo.lastModified())
+        assertEquals(listOf("p.jpg"), photo.parentFile!!.list()!!.toList())
+    }
+
+    @Test
+    fun aTurnReplacesThePhotoWholeAndKeepsItsTime() {
+        val photo = file("A/p.jpg", text = "original")
+        assertTrue(rotateClockwise(photo) { it.appendText(" turned") })
+        assertEquals("original turned", photo.readText())
+        assertEquals(1_000_000L, photo.lastModified())
+        assertEquals(listOf("p.jpg"), photo.parentFile!!.list()!!.toList())
+    }
+
+    @Test
+    fun aTurnNeverWritesIntoTheOriginal() {
+        val photo = file("A/p.jpg", text = "original")
+        rotateClockwise(photo) {
+            assertTrue(it != photo)
+            assertEquals("original", photo.readText())
+            it.appendText(" turned")
+        }
+    }
 }

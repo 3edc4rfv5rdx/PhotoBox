@@ -69,18 +69,44 @@ fun canRotate(file: File): Boolean = file.extension.lowercase() in ROTATABLE_EXT
  * Turns [file] 90° clockwise by its EXIF orientation alone: the pixels are
  * not touched, so nothing is lost however often it is turned. Its time is
  * kept — the grid falls back on it for a photo with no date of its own.
+ *
+ * The original is never written into: a copy beside it is turned, forced
+ * onto the medium and renamed over it, so a kill or a power cut midway
+ * leaves either the photo as it was or the turned one, never half of each.
+ * [turn] does the turning on that copy; a test hands in one that fails.
  */
-fun rotateClockwise(file: File): Boolean = try {
-    val modified = file.lastModified()
+fun rotateClockwise(file: File, turn: (File) -> Unit = ::turnExifClockwise): Boolean {
+    val temp = File(file.parentFile, ".${file.name}$ROTATE_TEMP_SUFFIX")
+    return try {
+        val modified = file.lastModified()
+        // Left by a turn cut short before: not anybody's photo.
+        temp.delete()
+        if (!copyFile(file, temp, {}, sync = null)) return false
+        turn(temp)
+        forceToMedium(temp)
+        temp.setLastModified(modified)
+        temp.renameTo(file).also { if (!it) temp.delete() }
+    } catch (e: Exception) {
+        // A malformed EXIF block throws more than IOException; the photo stays as it was.
+        temp.delete()
+        false
+    }
+}
+
+/** The end of the hidden copy a turn writes beside its photo: no gallery takes it for one. */
+internal const val ROTATE_TEMP_SUFFIX = ".turning"
+
+/** [file]'s EXIF orientation a quarter turn on, written back into it. */
+private fun turnExifClockwise(file: File) {
     ExifInterface(file.path).apply {
         rotate(90)
         saveAttributes()
     }
-    file.setLastModified(modified)
-    true
-} catch (e: Exception) {
-    // A malformed EXIF block throws more than IOException; the photo stays as it was.
-    false
+}
+
+/** [file]'s data, as it is now, forced onto its device. */
+private fun forceToMedium(file: File) {
+    FileChannel.open(file.toPath(), StandardOpenOption.WRITE).use { DeviceSync.sync(it) }
 }
 
 enum class Transfer { MOVE, COPY }
