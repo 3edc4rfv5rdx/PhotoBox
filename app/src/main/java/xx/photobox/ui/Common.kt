@@ -1,6 +1,7 @@
 package xx.photobox.ui
 
 import android.content.Context
+import android.text.format.DateUtils
 import android.text.format.Formatter
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
@@ -148,6 +149,13 @@ fun PhotoBoxTheme(themeMode: ThemeMode, accentIndex: Int, content: @Composable (
 
 /** A file size the way the system's own screens write it. */
 fun formatSize(context: Context, bytes: Long): String = Formatter.formatShortFileSize(context, bytes)
+
+/** A moment with its date, year and time, in the phone's own way of writing them. */
+fun formatDateTime(context: Context, millis: Long): String = DateUtils.formatDateTime(
+    context,
+    millis,
+    DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_YEAR or DateUtils.FORMAT_SHOW_TIME,
+)
 
 /** A playing time as a clock: m:ss, or h:mm:ss from an hour up. */
 fun formatClock(millis: Long): String {

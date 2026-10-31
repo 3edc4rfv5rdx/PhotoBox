@@ -8,6 +8,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -24,6 +25,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,10 +39,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -77,6 +84,9 @@ private const val CONTROLS_SHOWN_MS = 3000L
 private val END_MARK = 160.dp
 private const val END_MARK_ALPHA = 0.85f
 
+/** The caption's room from the screen's edges. */
+private val CAPTION_PADDING = 16.dp
+
 /** One photo up on the slideshow. A class of its own, so the same file shown again still counts as a new slide. */
 private class Slide(val path: String, val bitmap: Bitmap)
 
@@ -94,7 +104,9 @@ private class Slide(val path: String, val bitmap: Bitmap)
  * and round, a new shuffle each round; both start off every time. Going on
  * from a pause moves to the next photo after [RESUME_WAIT_MS], not a whole
  * [seconds]. Each photo put up in album order is reported to [onShown], so
- * the next start can go on from it; a shuffled one is not. A photo that
+ * the next start can go on from it; a shuffled one is not. With [caption]
+ * each photo's date and name are written in its top corner, fading with it;
+ * the menu switches it through [onCaption]. A photo that
  * cannot be decoded is passed over in the direction being moved — forward
  * when there is nothing left the other way — and when none can, it closes by itself.
  */
@@ -103,6 +115,8 @@ fun SlideshowScreen(
     photos: List<MediaItem>,
     start: Int,
     seconds: Int,
+    caption: Boolean,
+    onCaption: (Boolean) -> Unit,
     onShown: (String) -> Unit,
     onEnded: () -> Unit,
     onClose: () -> Unit,
@@ -112,6 +126,7 @@ fun SlideshowScreen(
     HideSystemBars()
     val rotation = rememberMediaRotation()
     val paths = remember(photos) { photos.map { it.file.path } }
+    val taken = remember(photos) { photos.associate { it.file.path to it.taken } }
     val currentPaths by rememberUpdatedState(paths)
     // Saved as the photo up and whether shuffled: a recreated show goes on from
     // it, a shuffled one in a new round, rather than keeping a whole album's
@@ -242,12 +257,15 @@ fun SlideshowScreen(
         RotatedFrame(rotation, Modifier.fillMaxSize()) {
             Crossfade(targetState = shown, animationSpec = tween(FADE_MS), label = "slide") { slide ->
                 if (slide != null) {
-                    Image(
-                        bitmap = slide.bitmap.asImageBitmap(),
-                        contentDescription = null,
-                        contentScale = ContentScale.Fit,
-                        modifier = Modifier.fillMaxSize(),
-                    )
+                    Box(Modifier.fillMaxSize()) {
+                        Image(
+                            bitmap = slide.bitmap.asImageBitmap(),
+                            contentDescription = null,
+                            contentScale = ContentScale.Fit,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        if (caption) Caption(slide.path, taken[slide.path], Modifier.align(Alignment.TopEnd))
+                    }
                 } else {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = Color.White)
@@ -314,6 +332,10 @@ fun SlideshowScreen(
                                 touched++
                                 repeat = !repeat
                             }
+                            AppMenuCheckItem(stringResource(R.string.slideshow_caption), caption) {
+                                touched++
+                                onCaption(!caption)
+                            }
                         }
                     }
                     Spacer(Modifier.width(CONTROLS_MIDDLE_GAP))
@@ -352,5 +374,23 @@ fun SlideshowScreen(
         }
 
         info?.let { InfoDialog(File(it), onDismiss = { info = null }) }
+    }
+}
+
+/**
+ * A photo's date and name, white with a shadow so they read over any photo.
+ * The date is the one the album sorts by, gone with a photo the album no
+ * longer has.
+ */
+@Composable
+private fun Caption(path: String, taken: Long?, modifier: Modifier) {
+    val context = LocalContext.current
+    val style = MaterialTheme.typography.bodyLarge.copy(
+        color = Color.White,
+        shadow = Shadow(Color.Black, Offset(0f, 2f), blurRadius = 6f),
+    )
+    Column(modifier.padding(CAPTION_PADDING), horizontalAlignment = Alignment.End) {
+        taken?.let { Text(formatDateTime(context, it), style = style, maxLines = 1) }
+        Text(File(path).name, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }

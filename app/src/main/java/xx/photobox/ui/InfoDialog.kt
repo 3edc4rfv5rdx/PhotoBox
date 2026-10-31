@@ -3,7 +3,6 @@ package xx.photobox.ui
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
-import android.text.format.DateUtils
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -65,8 +64,8 @@ fun InfoDialog(file: File, onDismiss: () -> Unit, shownAs: File = file) {
                         InfoLine(stringResource(R.string.info_resolution), "${i.width} × ${i.height}")
                     }
                     i.durationMs?.let { InfoLine(stringResource(R.string.info_duration), formatClock(it)) }
-                    i.taken?.let { InfoLine(stringResource(R.string.info_taken), dateTime(context, it)) }
-                    InfoLine(stringResource(R.string.info_modified), dateTime(context, i.modified))
+                    i.taken?.let { InfoLine(stringResource(R.string.info_taken), formatDateTime(context, it)) }
+                    InfoLine(stringResource(R.string.info_modified), formatDateTime(context, i.modified))
                     i.camera?.let { InfoLine(stringResource(R.string.info_camera), it) }
                     exposureLine(i)?.let { InfoLine(stringResource(R.string.info_exposure), it) }
                     if (i.latitude != null && i.longitude != null) {
@@ -106,12 +105,6 @@ private fun exposureLine(info: FileInfo): String? {
     )
     return parts.takeIf { it.isNotEmpty() }?.joinToString("  ·  ")
 }
-
-private fun dateTime(context: Context, millis: Long): String = DateUtils.formatDateTime(
-    context,
-    millis,
-    DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_YEAR or DateUtils.FORMAT_SHOW_TIME,
-)
 
 /** The place in whatever map app the phone has, with a pin on it. */
 private fun openMap(context: Context, latitude: Double, longitude: Double) {

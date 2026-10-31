@@ -146,6 +146,7 @@ fun MainScreen(
         if (at >= 0 && viewerPath == path) viewerPath = (list.getOrNull(at + 1) ?: list.getOrNull(at - 1))?.file?.path
     }
     val slideSeconds by AppSettings.slideSeconds.collectAsState()
+    val slideCaption by AppSettings.slideCaption.collectAsState()
     // Where the running slideshow started; null while none runs.
     var slideshowStart by rememberSaveable { mutableStateOf<Int?>(null) }
     // Where the album's last slideshow got to, while asked whether to go on from there.
@@ -547,6 +548,8 @@ fun MainScreen(
                         photos = photos,
                         start = start,
                         seconds = slideSeconds,
+                        caption = slideCaption,
+                        onCaption = { AppSettings.setSlideCaption(context, it) },
                         onShown = { path -> vm.album?.let { AppSettings.setSlideshowFrame(context, it, path) } },
                         onEnded = { AppSettings.clearSlideshowFrame(context) },
                         onClose = { slideshowStart = null },
