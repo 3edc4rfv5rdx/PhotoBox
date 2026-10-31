@@ -74,10 +74,13 @@ object Trash {
     /**
      * Moves each file of [files] — the entry's own first, then its companions
      * — into [trashDir] under id [at], each paired with the path it is to go
-     * back to. The record is written first: a file in the trash with no
+     * back to; refused for a path that [breaksLines], which the record could
+     * not hold. The record is written first: a file in the trash with no
      * record could never go back.
      */
     private fun store(files: List<Pair<File, File>>, trashDir: File, at: Long): Boolean {
+        // Its record could not say where it goes back to: it would come back under another name.
+        if (files.any { (_, original) -> breaksLines(original.path) }) return false
         if (!trashDir.isDirectory && !trashDir.mkdirs()) return false
         File(trashDir, NOMEDIA_NAME).let { if (!it.exists()) runCatching { it.createNewFile() } }
         val id = freeId(trashDir, at, files.map { it.second })

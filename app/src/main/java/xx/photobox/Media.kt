@@ -36,3 +36,10 @@ fun isMedia(file: File): Boolean = file.extension.lowercase().let { it in IMAGE_
 
 /** The file that tells galleries to pass a folder by, and what makes a folder hidden here. */
 const val NOMEDIA_NAME = ".nomedia"
+
+/**
+ * Whether [path] cannot be kept as one line of the app's own files — the
+ * trash's records, the date cache — which are read back line by line: a line
+ * ends at a line feed or a carriage return, and a name may hold either.
+ */
+fun breaksLines(path: String): Boolean = '\n' in path || '\r' in path

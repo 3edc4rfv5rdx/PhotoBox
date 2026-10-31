@@ -185,4 +185,15 @@ class TrashTest {
         entry.companions.forEach { it.first.delete() }
         assertEquals(8L, entry.size)
     }
+
+    @Test
+    fun aNameWithALineBreakIsNotTrashed() {
+        for (name in listOf("a\nb.jpg", "a\rb.jpg")) {
+            val photo = file("A/$name")
+            assertFalse(Trash.moveToTrash(photo, trash, now = 9))
+            assertTrue(photo.exists())
+        }
+        assertTrue(list().isEmpty())
+        assertFalse(File(trash, "9.path").exists())
+    }
 }

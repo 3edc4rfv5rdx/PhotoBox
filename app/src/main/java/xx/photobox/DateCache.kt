@@ -11,7 +11,7 @@ import java.io.IOException
  *
  * One line per file: path, time, size and date taken, tab-separated. The path
  * is read up to the last three tabs, so a tab in a name does not break it;
- * a name with a line break is never stored.
+ * a name with a line break ([breaksLines]) is never stored.
  */
 class DateCache(private val store: File) {
     private class Entry(val modified: Long, val size: Long, val taken: Long)
@@ -30,7 +30,7 @@ class DateCache(private val store: File) {
 
     @Synchronized
     fun put(file: File, modified: Long, size: Long, taken: Long) {
-        if ('\n' in file.path) return
+        if (breaksLines(file.path)) return
         load()
         entries[file.path] = Entry(modified, size, taken)
         dirty = true

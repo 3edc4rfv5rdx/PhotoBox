@@ -50,4 +50,14 @@ class DateCacheTest {
         cache.put(other, 4, 5, 6)
         assertEquals(6L, cache.get(other, 4, 5))
     }
+
+    @Test
+    fun aNameWithALineBreakIsNeverStored() {
+        val cache = DateCache(store)
+        cache.put(File("/a/x\ry.jpg"), 1, 2, 3)
+        cache.put(photo, 1, 2, 3)
+        cache.save()
+        assertEquals(1, store.readLines().size)
+        assertNull(DateCache(store).get(File("/a/x\ry.jpg"), 1, 2))
+    }
 }
