@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A file opened from another app is taken by its path only when it lies on the phone's storage or an SD card, and Share can no longer hand out the app's own files
 - E: A file whose name holds a line break is no longer put in the trash, where it would come back under another name
 - E: A slideshow seen to the end is no longer offered to go on from its last photo
 - F: A long trash no longer stalls the screen working out its sizes
