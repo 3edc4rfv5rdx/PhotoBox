@@ -548,6 +548,7 @@ fun MainScreen(
                         photos = photos,
                         start = start,
                         seconds = slideSeconds,
+                        onSeconds = { AppSettings.setSlideSeconds(context, it) },
                         caption = slideCaption,
                         onCaption = { AppSettings.setSlideCaption(context, it) },
                         onShown = { path -> vm.album?.let { AppSettings.setSlideshowFrame(context, it, path) } },

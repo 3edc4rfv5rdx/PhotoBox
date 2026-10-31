@@ -65,6 +65,8 @@
     <string name="slideshow_shuffle">Випадковий порядок</string>
     <string name="slideshow_repeat">По колу</string>
     <string name="slideshow_caption">Підпис</string>
+    <string name="slideshow_shorter">Коротше</string>
+    <string name="slideshow_longer">Довше</string>
     <string name="info">Відомості</string>
     <string name="info_name">Назва</string>
     <string name="info_folder">Папка</string>

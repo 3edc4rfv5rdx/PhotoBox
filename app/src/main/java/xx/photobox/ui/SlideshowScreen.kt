@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
@@ -46,6 +47,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -56,6 +58,8 @@ import xx.photobox.R
 import xx.photobox.SlideOrder
 import xx.photobox.albumOrder
 import xx.photobox.albumOrderAt
+import xx.photobox.longerSlideSeconds
+import xx.photobox.shorterSlideSeconds
 import xx.photobox.next
 import xx.photobox.previous
 import xx.photobox.reconciled
@@ -106,7 +110,8 @@ private class Slide(val path: String, val bitmap: Bitmap)
  * [seconds]. Each photo put up in album order is reported to [onShown], so
  * the next start can go on from it; a shuffled one is not. With [caption]
  * each photo's date and name are written in its top corner, fading with it;
- * the menu switches it through [onCaption]. A photo that
+ * the menu switches it through [onCaption], and steps the time per photo
+ * through [onSeconds], from the next photo on. A photo that
  * cannot be decoded is passed over in the direction being moved — forward
  * when there is nothing left the other way — and when none can, it closes by itself.
  */
@@ -115,6 +120,7 @@ fun SlideshowScreen(
     photos: List<MediaItem>,
     start: Int,
     seconds: Int,
+    onSeconds: (Int) -> Unit,
     caption: Boolean,
     onCaption: (Boolean) -> Unit,
     onShown: (String) -> Unit,
@@ -336,6 +342,10 @@ fun SlideshowScreen(
                                 touched++
                                 onCaption(!caption)
                             }
+                            SlideTimeLine(seconds) {
+                                touched++
+                                onSeconds(it)
+                            }
                         }
                     }
                     Spacer(Modifier.width(CONTROLS_MIDDLE_GAP))
@@ -392,5 +402,32 @@ private fun Caption(path: String, taken: Long?, modifier: Modifier) {
     Column(modifier.padding(CAPTION_PADDING), horizontalAlignment = Alignment.End) {
         taken?.let { Text(formatDateTime(context, it), style = style, maxLines = 1) }
         Text(File(path).name, style = style, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    }
+}
+
+/** The show's menu line for the time per photo: shorter, the time, longer, one of the menu's steps a tap. */
+@Composable
+private fun SlideTimeLine(seconds: Int, onChange: (Int) -> Unit) {
+    val shorter = shorterSlideSeconds(seconds)
+    val longer = longerSlideSeconds(seconds)
+    Row(Modifier.padding(horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        LargeIconButton(
+            Icons.Filled.Remove,
+            stringResource(R.string.slideshow_shorter),
+            { shorter?.let(onChange) },
+            enabled = shorter != null,
+        )
+        Text(
+            stringResource(R.string.seconds_short, seconds),
+            style = MaterialTheme.typography.titleLarge,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f),
+        )
+        LargeIconButton(
+            Icons.Filled.Add,
+            stringResource(R.string.slideshow_longer),
+            { longer?.let(onChange) },
+            enabled = longer != null,
+        )
     }
 }

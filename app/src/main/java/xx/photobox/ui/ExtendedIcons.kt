@@ -192,3 +192,21 @@ val Icons.Filled.RestoreFromTrash: ImageVector
     }
 
 private var _restoreFromTrash: ImageVector? = null
+
+val Icons.Filled.Remove: ImageVector
+    get() {
+        if (_remove != null) return _remove!!
+        _remove = materialIcon(name = "Filled.Remove") {
+            materialPath {
+                moveTo(19.0f, 13.0f)
+                horizontalLineTo(5.0f)
+                verticalLineToRelative(-2.0f)
+                horizontalLineToRelative(14.0f)
+                verticalLineToRelative(2.0f)
+                close()
+            }
+        }
+        return _remove!!
+    }
+
+private var _remove: ImageVector? = null

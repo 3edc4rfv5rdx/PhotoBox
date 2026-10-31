@@ -39,6 +39,15 @@ const val DEFAULT_TRASH_DAYS = 30
 val SLIDE_SECONDS = 1..30
 const val DEFAULT_SLIDE_SECONDS = 5
 
+/** The times the slideshow's menu steps through: a second apart where a second tells, further apart where it does not. */
+val SLIDE_SECONDS_STEPS = listOf(1, 2, 3, 5, 7, 10, 15, 20, 30)
+
+/** The step after [seconds], or null at the longest; a time set between two steps on the slider goes to the next one. */
+fun longerSlideSeconds(seconds: Int): Int? = SLIDE_SECONDS_STEPS.firstOrNull { it > seconds }
+
+/** The step before [seconds], or null at the shortest. */
+fun shorterSlideSeconds(seconds: Int): Int? = SLIDE_SECONDS_STEPS.lastOrNull { it < seconds }
+
 /** How many thumbnails across a pinch can set. */
 val GRID_COLUMNS = 2..5
 const val DEFAULT_GRID_COLUMNS = 3
