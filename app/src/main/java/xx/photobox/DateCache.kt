@@ -1,6 +1,7 @@
 package xx.photobox
 
 import java.io.File
+import java.io.IOException
 
 /**
  * When each file was taken, kept on disk so an album opened again does not
@@ -35,26 +36,41 @@ class DateCache(private val store: File) {
         dirty = true
     }
 
-    /** Writes the entries out when any changed; a new file first, so a crash mid-write leaves the old one whole. */
+    /**
+     * Writes the entries out when any changed; a new file first, so a crash
+     * mid-write leaves the old one whole. A write that fails — the phone's
+     * storage full — leaves the old file as it was and is only a cache not
+     * saved: the entries stay in memory, and the next save tries again.
+     */
     @Synchronized
     fun save() {
         if (!dirty) return
         val temp = File(store.path + ".tmp")
-        temp.bufferedWriter().use { out ->
-            for ((path, e) in entries) out.write("$path\t${e.modified}\t${e.size}\t${e.taken}\n")
+        val saved = try {
+            temp.bufferedWriter().use { out ->
+                for ((path, e) in entries) out.write("$path\t${e.modified}\t${e.size}\t${e.taken}\n")
+            }
+            temp.renameTo(store)
+        } catch (e: IOException) {
+            false
         }
-        if (temp.renameTo(store)) dirty = false
+        if (saved) dirty = false else temp.delete()
     }
 
     private fun load() {
         if (loaded) return
         loaded = true
         if (!store.isFile) return
-        store.forEachLine { line ->
-            val parts = line.split('\t')
-            if (parts.size < 4) return@forEachLine
-            val numbers = parts.takeLast(3).map { it.toLongOrNull() ?: return@forEachLine }
-            entries[parts.dropLast(3).joinToString("\t")] = Entry(numbers[0], numbers[1], numbers[2])
+        try {
+            store.forEachLine { line ->
+                val parts = line.split('\t')
+                if (parts.size < 4) return@forEachLine
+                val numbers = parts.takeLast(3).map { it.toLongOrNull() ?: return@forEachLine }
+                entries[parts.dropLast(3).joinToString("\t")] = Entry(numbers[0], numbers[1], numbers[2])
+            }
+        } catch (e: IOException) {
+            // Unreadable: every date is read again, as on a first start.
+            entries.clear()
         }
     }
 }
