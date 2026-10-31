@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A slideshow seen to the end is no longer offered to go on from its last photo
 - F: A long trash no longer stalls the screen working out its sizes
 - E: A photo being turned can no longer be damaged by the app being closed or the power going midway
 - E: While files are being moved, copied or changed, the steps that would clash are greyed out, and one that still gets through says why it did not start
