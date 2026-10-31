@@ -97,6 +97,7 @@
     <string name="empty_trash">Empty</string>
     <string name="empty_trash_confirm">Everything in the trash is deleted for good</string>
     <string name="delete_failed">Could not delete</string>
+    <string name="busy_refused">Another change to files is under way</string>
     <string name="restore_exists">Something with that name is already in the original place</string>
     <string name="restore_failed">Could not restore</string>
     <string name="restore_some_left">Some files stayed in the trash: their names are taken</string>

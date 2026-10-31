@@ -73,6 +73,7 @@ fun AlbumsScreen(
     onRename: (File) -> Unit,
     onDeleteEmpty: (File) -> Unit,
     onRemoveRoot: ((File) -> Unit)?,
+    busy: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val sections = remember(albums, roots, order, showHidden) {
@@ -123,6 +124,7 @@ fun AlbumsScreen(
                             AlbumRow(
                                 album,
                                 selected = album.dir == current,
+                                busy = busy,
                                 onRename = { onRename(album.dir) },
                                 onDelete = if (album.count == 0) {
                                     { onDeleteEmpty(album.dir) }
@@ -206,7 +208,14 @@ private fun RootHeading(root: File, onNewAlbum: () -> Unit, onRemove: (() -> Uni
 }
 
 @Composable
-private fun AlbumRow(album: Album, selected: Boolean, onRename: () -> Unit, onDelete: (() -> Unit)?, onClick: () -> Unit) {
+private fun AlbumRow(
+    album: Album,
+    selected: Boolean,
+    busy: Boolean,
+    onRename: () -> Unit,
+    onDelete: (() -> Unit)?,
+    onClick: () -> Unit,
+) {
     // The open album the other way round, filled with the accent, so it is
     // found at a glance in a long list.
     val scheme = MaterialTheme.colorScheme
@@ -260,12 +269,13 @@ private fun AlbumRow(album: Album, selected: Boolean, onRename: () -> Unit, onDe
         Box {
             MoreButton(onClick = { menuOpen = true }, tint = if (selected) content else null)
             AppMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                AppMenuItem(stringResource(R.string.rename)) {
+                // Not while files are being changed: the step would only be refused.
+                AppMenuItem(stringResource(R.string.rename), enabled = !busy) {
                     menuOpen = false
                     onRename()
                 }
                 if (onDelete != null) {
-                    AppMenuItem(stringResource(R.string.delete_album), danger = true) {
+                    AppMenuItem(stringResource(R.string.delete_album), enabled = !busy, danger = true) {
                         menuOpen = false
                         onDelete()
                     }

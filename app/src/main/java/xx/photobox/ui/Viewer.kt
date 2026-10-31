@@ -116,6 +116,7 @@ fun ViewerScreen(
     onDelete: ((MediaItem) -> Unit)?,
     onClose: () -> Unit,
     shownAs: (MediaItem) -> File = { it.file },
+    busy: Boolean = false,
 ) {
     BackHandler(onBack = onClose)
     val start = sorted.indexOfFirst { it.file.path == startPath }.coerceAtLeast(0)
@@ -235,29 +236,29 @@ fun ViewerScreen(
                             }
                         }
                         if (onRotate != null) {
-                            AppMenuItem(stringResource(R.string.rotate), enabled = current != null && canRotate(current.file)) {
+                            AppMenuItem(stringResource(R.string.rotate), enabled = !busy && current != null && canRotate(current.file)) {
                                 menuOpen = false
                                 current?.let(onRotate)
                             }
                         }
                         if (onRename != null) {
-                            AppMenuItem(stringResource(R.string.rename), enabled = current != null) {
+                            AppMenuItem(stringResource(R.string.rename), enabled = !busy && current != null) {
                                 menuOpen = false
                                 current?.let(onRename)
                             }
                         }
                         if (onTransfer != null) {
-                            AppMenuItem(stringResource(R.string.move), enabled = current != null) {
+                            AppMenuItem(stringResource(R.string.move), enabled = !busy && current != null) {
                                 menuOpen = false
                                 current?.let { onTransfer(it, Transfer.MOVE) }
                             }
-                            AppMenuItem(stringResource(R.string.copy), enabled = current != null) {
+                            AppMenuItem(stringResource(R.string.copy), enabled = !busy && current != null) {
                                 menuOpen = false
                                 current?.let { onTransfer(it, Transfer.COPY) }
                             }
                         }
                         if (onDelete != null) {
-                            AppMenuItem(stringResource(R.string.to_trash), enabled = current != null) {
+                            AppMenuItem(stringResource(R.string.to_trash), enabled = !busy && current != null) {
                                 menuOpen = false
                                 current?.let(onDelete)
                             }

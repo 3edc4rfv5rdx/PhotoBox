@@ -97,6 +97,7 @@
     <string name="empty_trash">Очистить</string>
     <string name="empty_trash_confirm">Всё в корзине будет удалено навсегда</string>
     <string name="delete_failed">Не удалось удалить</string>
+    <string name="busy_refused">Уже идёт другая работа с файлами</string>
     <string name="restore_exists">На прежнем месте уже есть файл с таким именем</string>
     <string name="restore_failed">Не удалось восстановить</string>
     <string name="restore_some_left">Часть файлов осталась в корзине: их имена заняты</string>

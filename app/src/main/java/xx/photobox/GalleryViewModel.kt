@@ -100,9 +100,31 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     var fileJobBytes by mutableLongStateOf(0L)
         private set
 
-    /** Whether files are being changed — the trash, or the album's files moved, copied or trashed — so nothing else starts meanwhile. */
+    /** Set while an album or a file is renamed, or an empty album deleted: quick, but files are changing all the same. */
+    private var changing by mutableStateOf(false)
+
+    /**
+     * Whether files are being changed — the trash, the album's files moved,
+     * copied, trashed or turned, a rename — so nothing else that changes files
+     * or the trash starts meanwhile. The one answer every such step asks.
+     */
     val busy: Boolean
-        get() = trashBusy || fileJob != null
+        get() = filesBusy(trashBusy, fileJob, changing)
+
+    /** Runs [work], which changes files, with [changing] set before — by the caller, so no second step slips in — and cleared after, however it ends. */
+    private suspend fun <T> changingFiles(work: suspend () -> T): T =
+        try {
+            work()
+        } finally {
+            changing = false
+        }
+
+    /** True, with a notice saying why, when [busy] refuses a step now: so a refused step is never silent. */
+    private fun refused(): Boolean {
+        if (!busy) return false
+        notice = FileNotice.BUSY
+        return true
+    }
 
     /** The new-album dialog's contents while it is open, or while its folder is being picked. */
     var draft by mutableStateOf<AlbumDraft?>(null)
@@ -261,8 +283,10 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
      * scan is left alone.
      */
     fun deleteEmptyAlbum(dir: File) {
+        if (refused()) return
+        changing = true
         viewModelScope.launch {
-            val gone = withContext(Dispatchers.IO) { dir.listFiles()?.isEmpty() == true && dir.delete() }
+            val gone = changingFiles { withContext(Dispatchers.IO) { dir.listFiles()?.isEmpty() == true && dir.delete() } }
             if (!gone) {
                 notice = FileNotice.DELETE_FAILED
             } else if (album == dir) {
@@ -278,13 +302,19 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
      * hears its new place, or null when it could not be renamed.
      */
     fun renameAlbum(dir: File, name: String, onDone: (File?) -> Unit) {
-        if (busy) return
+        if (refused()) {
+            onDone(null)
+            return
+        }
         val renamed = File(dir.parentFile, name.trim())
+        changing = true
         viewModelScope.launch {
-            val ok = withContext(Dispatchers.IO) {
-                val before = dir.listFiles().orEmpty().map { it.path }
-                dir.renameTo(renamed).also { ok ->
-                    if (ok) announceChanged(getApplication(), before + renamed.listFiles().orEmpty().map { it.path })
+            val ok = changingFiles {
+                withContext(Dispatchers.IO) {
+                    val before = dir.listFiles().orEmpty().map { it.path }
+                    dir.renameTo(renamed).also { ok ->
+                        if (ok) announceChanged(getApplication(), before + renamed.listFiles().orEmpty().map { it.path })
+                    }
                 }
             }
             if (ok) {
@@ -339,7 +369,11 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
      * again either way.
      */
     fun moveToTrash(files: List<File>, onDone: (Boolean) -> Unit = {}) {
-        if (busy || files.isEmpty()) return
+        if (files.isEmpty()) return
+        if (refused()) {
+            onDone(false)
+            return
+        }
         trashBusy = true
         viewModelScope.launch {
             val failed = runFileJob(FileJob.TRASH, files) { file, _ ->
@@ -365,7 +399,10 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
      * the open album is read again either way.
      */
     fun transfer(files: List<File>, dir: File, mode: Transfer, onDone: (Boolean) -> Unit = {}) {
-        if (busy) return
+        if (refused()) {
+            onDone(false)
+            return
+        }
         val groups = files.filter { mode == Transfer.COPY || it.parentFile?.path != dir.path }
         if (groups.isEmpty()) {
             onDone(true)
@@ -399,7 +436,11 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
      */
     fun rotate(files: List<File>, onDone: () -> Unit) {
         val turnable = files.filter(::canRotate)
-        if (busy || turnable.isEmpty()) return
+        if (turnable.isEmpty()) return
+        if (refused()) {
+            onDone()
+            return
+        }
         viewModelScope.launch {
             val failed = runFileJob(FileJob.ROTATE, turnable) { file, _ ->
                 if (rotateClockwise(file)) listOf(file.path) else null
@@ -416,9 +457,13 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
      * open album is read again either way.
      */
     fun rename(file: File, base: String, onDone: (File?) -> Unit) {
-        if (busy) return
+        if (refused()) {
+            onDone(null)
+            return
+        }
+        changing = true
         viewModelScope.launch {
-            val renamed = withContext(Dispatchers.IO) {
+            val renamed = changingFiles { withContext(Dispatchers.IO) {
                 val moves = renameTargets(file, base.trim())
                 if (renameAll(moves.map { it.first }, moves.map { it.second })) {
                     announceChanged(getApplication(), moves.flatMap { (from, to) -> listOf(from.path, to.path) })
@@ -433,7 +478,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
                 } else {
                     null
                 }
-            }
+            } }
             onDone(renamed)
             loadItems()
         }
@@ -524,7 +569,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     private fun changeAllOfTrash(job: TrashJob, step: (TrashEntry) -> Boolean) {
         val entries = trashEntries.orEmpty()
         // Checked here, not only in changeTrash: the job is set before it starts.
-        if (trashBusy || entries.isEmpty()) return
+        if (entries.isEmpty() || refused()) return
         trashJob = job
         trashJobTotal = entries.size
         trashJobDone = 0
@@ -552,7 +597,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
 
     /** Runs [step] off the main thread with the trash marked busy, then reads the trash and the open album again. */
     private fun changeTrash(step: () -> FileNotice?) {
-        if (trashBusy) return
+        if (refused()) return
         trashBusy = true
         viewModelScope.launch {
             val said = withContext(Dispatchers.IO) { step() }
@@ -571,8 +616,12 @@ enum class TrashJob { RESTORE, EMPTY }
 /** A step on the album's files, shown with its progress while it runs. */
 enum class FileJob { MOVE, COPY, TRASH, ROTATE }
 
-/** What a step on files reports when it did not all go as asked. */
-enum class FileNotice { DELETE_FAILED, RESTORE_EXISTS, RESTORE_FAILED, RESTORE_SOME_LEFT, MOVE_FAILED, MOVE_LEFT_ORIGINALS, COPY_FAILED, ROTATE_FAILED }
+/** Whether files may not be changed now: the trash being changed, a [fileJob] running, or a rename [changing] them. */
+internal fun filesBusy(trashBusy: Boolean, fileJob: FileJob?, changing: Boolean): Boolean =
+    trashBusy || fileJob != null || changing
+
+/** What a step on files reports when it did not all go as asked; [BUSY]: it was not started, another one runs. */
+enum class FileNotice { BUSY, DELETE_FAILED, RESTORE_EXISTS, RESTORE_FAILED, RESTORE_SOME_LEFT, MOVE_FAILED, MOVE_LEFT_ORIGINALS, COPY_FAILED, ROTATE_FAILED }
 
 private const val DAY_MS = 24L * 60 * 60 * 1000
 

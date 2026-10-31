@@ -97,6 +97,7 @@
     <string name="empty_trash">Очистити</string>
     <string name="empty_trash_confirm">Усе в кошику буде видалено назавжди</string>
     <string name="delete_failed">Не вдалося видалити</string>
+    <string name="busy_refused">Уже триває інша робота з файлами</string>
     <string name="restore_exists">На попередньому місці вже є файл із такою назвою</string>
     <string name="restore_failed">Не вдалося відновити</string>
     <string name="restore_some_left">Частина файлів лишилася в кошику: їхні назви зайняті</string>

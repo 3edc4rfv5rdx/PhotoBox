@@ -212,6 +212,7 @@ fun MainScreen(
                     onNewAlbum = vm::startDraft,
                     onRename = { renamingAlbum = it.path },
                     onDeleteEmpty = vm::deleteEmptyAlbum,
+                    busy = vm.busy,
                     onRemoveRoot = if (roots.isEmpty()) {
                         null
                     } else {
@@ -283,7 +284,7 @@ fun MainScreen(
                 title = stringResource(R.string.trash),
                 onBack = backToThumbnails,
                 actions = {
-                    val filled = !vm.trashBusy && !vm.trashEntries.isNullOrEmpty()
+                    val filled = !vm.busy && !vm.trashEntries.isNullOrEmpty()
                     LargeIconButton(
                         Icons.Filled.RestoreFromTrash,
                         stringResource(R.string.restore_all),
@@ -298,7 +299,7 @@ fun MainScreen(
                 Box(Modifier.weight(1f)) {
                     TrashScreen(
                         entries = vm.trashEntries,
-                        busy = vm.trashBusy,
+                        busy = vm.busy,
                         job = vm.trashJob,
                         jobDone = vm.trashJobDone,
                         jobTotal = vm.trashJobTotal,
@@ -542,6 +543,7 @@ fun MainScreen(
                                 }
                             },
                             onClose = { viewerPath = null },
+                            busy = vm.busy,
                         )
                     }
                 }
@@ -733,6 +735,7 @@ private fun TopBar(content: @Composable RowScope.() -> Unit) {
 private enum class TrashStep { RESTORE_ALL, EMPTY }
 
 private fun FileNotice.messageRes(): Int = when (this) {
+    FileNotice.BUSY -> R.string.busy_refused
     FileNotice.DELETE_FAILED -> R.string.delete_failed
     FileNotice.RESTORE_EXISTS -> R.string.restore_exists
     FileNotice.RESTORE_FAILED -> R.string.restore_failed
