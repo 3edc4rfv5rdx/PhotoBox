@@ -146,7 +146,8 @@ private fun TrashRow(
             .padding(start = 16.dp, end = 4.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        PhotoThumbnail(entry.file.path, Modifier.size(TRASH_THUMBNAIL))
+        // A trashed file's name is the moment it was trashed: no other file is ever put under it.
+        PhotoThumbnail(entry.file.path, size = 0, modified = entry.deletedAt, modifier = Modifier.size(TRASH_THUMBNAIL))
         Column(Modifier.weight(1f).padding(start = 12.dp)) {
             Text(
                 entry.original.name,

@@ -95,7 +95,7 @@ private suspend fun open(context: Context, uri: Uri, done: AtomicInteger, onToRe
     val items = if (folder.any { it.file.path == file.path }) {
         folder
     } else {
-        folder + withContext(Dispatchers.IO) { MediaItem(file, takenAt(file), file.length()) }
+        folder + withContext(Dispatchers.IO) { MediaItem(file, takenAt(file), file.length(), file.lastModified()) }
     }
     return Opened(sortItems(items, AppSettings.itemOrder.value), file.path)
 }

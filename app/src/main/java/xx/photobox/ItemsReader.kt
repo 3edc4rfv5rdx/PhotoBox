@@ -41,7 +41,7 @@ suspend fun readItems(dir: File, cache: DateCache, done: AtomicInteger, onToRead
             val modified = file.lastModified()
             val size = file.length()
             val taken = cache.get(file, modified, size)
-            if (taken != null) known += MediaItem(file, taken, size) else unknown += Triple(file, modified, size)
+            if (taken != null) known += MediaItem(file, taken, size, modified) else unknown += Triple(file, modified, size)
         }
     }
     onToRead(unknown.size)
@@ -52,7 +52,7 @@ suspend fun readItems(dir: File, cache: DateCache, done: AtomicInteger, onToRead
                     val taken = takenAt(file)
                     cache.put(file, modified, size, taken)
                     done.incrementAndGet()
-                    MediaItem(file, taken, size)
+                    MediaItem(file, taken, size, modified)
                 }
             }.awaitAll()
         }

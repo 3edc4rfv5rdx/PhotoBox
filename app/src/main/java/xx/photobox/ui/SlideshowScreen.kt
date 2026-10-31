@@ -174,7 +174,7 @@ fun SlideshowScreen(
     HideSystemBars()
     val rotation = rememberMediaRotation()
     val paths = remember(photos) { photos.map { it.file.path } }
-    val taken = remember(photos) { photos.associate { it.file.path to it.taken } }
+    val items = remember(photos) { photos.associateBy { it.file.path } }
     val currentPaths by rememberUpdatedState(paths)
     // Saved as the photo up and whether shuffled: a recreated show goes on from
     // it, a shuffled one in a new round, rather than keeping a whole album's
@@ -250,7 +250,8 @@ fun SlideshowScreen(
     // Puts up the photo at pos, or passes it over.
     LaunchedEffect(pos, at) {
         val path = at ?: return@LaunchedEffect
-        val bitmap = loadPhoto(path).await()
+        // Gone from a reloaded album: as good as a photo that cannot be read.
+        val bitmap = items[path]?.let { loadPhoto(it).await() }
         if (bitmap == null) {
             failedInARow++
             when {
@@ -267,7 +268,7 @@ fun SlideshowScreen(
         // The place to go on from is a place in the album, which a shuffled round is not.
         if (!order.shuffled) currentOnShown(path)
         // Read ahead while this one is up, so the fade does not wait on a decode.
-        order.paths.getOrNull(pos + step)?.let { loadPhoto(it) }
+        order.paths.getOrNull(pos + step)?.let(items::get)?.let { loadPhoto(it) }
     }
     // Holds the photo up, then moves on; a move by hand, a pause or a new photo
     // starts it over. Not while the photo moved to is still being read: the
@@ -345,7 +346,7 @@ fun SlideshowScreen(
                                 },
                             ),
                         )
-                        if (caption) Caption(slide.path, taken[slide.path], Modifier.align(Alignment.TopEnd))
+                        if (caption) Caption(slide.path, items[slide.path]?.taken, Modifier.align(Alignment.TopEnd))
                     }
                 } else {
                     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

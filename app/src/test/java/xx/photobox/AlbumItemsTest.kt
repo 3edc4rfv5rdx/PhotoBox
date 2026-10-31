@@ -20,7 +20,7 @@ class AlbumItemsTest {
     private fun at(date: String, hour: Int = 12): Long =
         LocalDate.parse(date).atTime(hour, 0).toInstant(ZoneOffset.UTC).toEpochMilli()
 
-    private fun item(name: String, taken: Long = 0, size: Long = 0) = MediaItem(File("/a/$name"), taken, size)
+    private fun item(name: String, taken: Long = 0, size: Long = 0) = MediaItem(File("/a/$name"), taken, size, modified = 0)
 
     @Test
     fun sortsNewestByNameOrLargestWithNameAsTieBreak() {

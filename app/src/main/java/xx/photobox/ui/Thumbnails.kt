@@ -63,11 +63,17 @@ private val thumbnailCache = bitmapCache(memoryShare = 16)
 private val revisions = mutableStateMapOf<String, Int>()
 
 /**
- * [path] as a decode's key, carrying how many times the photo has been
- * changed in place, so a changed one is decoded afresh instead of taken from
- * a cache. Read in composition, a change redraws whatever shows the photo.
+ * A decoded picture's key: the file at [path] as it was when listed — its
+ * [size] and [modified], so another file put at the same path later is not
+ * shown with this one's picture — and how many times the photo has been
+ * turned in place, which keeps both. Read in composition, a turn redraws
+ * whatever shows the photo. A [size] or [modified] not known is 0.
  */
-internal fun photoKey(path: String): String = "${revisions[path] ?: 0}:$path"
+internal fun photoKey(path: String, size: Long, modified: Long): String =
+    cacheKey(revisions[path] ?: 0, path, size, modified)
+
+/** [photoKey] from its parts. */
+internal fun cacheKey(revision: Int, path: String, size: Long, modified: Long): String = "$revision:$size:$modified:$path"
 
 /** Marks [paths] changed in place: everything showing them decodes them again. Main thread only. */
 fun photosChanged(paths: List<String>) {
@@ -80,15 +86,20 @@ internal fun bitmapCache(memoryShare: Int): LruCache<String, Bitmap> =
         override fun sizeOf(key: String, value: Bitmap): Int = value.byteCount
     }
 
-/** A square preview of the photo or video at [path], decoded to about [maxDimension] pixels a side. */
+/**
+ * A square preview of the photo or video at [path], decoded to about
+ * [maxDimension] pixels a side; [size] and [modified] as in [photoKey].
+ */
 @Composable
 fun PhotoThumbnail(
     path: String,
+    size: Long,
+    modified: Long,
     modifier: Modifier = Modifier,
     maxDimension: Int = THUMBNAIL_MAX_DIMENSION,
     corner: Dp = 8.dp,
 ) {
-    val key = "$maxDimension:${photoKey(path)}"
+    val key = "$maxDimension:${photoKey(path, size, modified)}"
     val bitmap by produceState<Bitmap?>(initialValue = thumbnailCache.get(key), key1 = key) {
         value = thumbnailCache.get(key)
             ?: withContext(thumbnailDispatcher) { withCancellationSignal { decodeThumbnail(path, maxDimension, it) } }

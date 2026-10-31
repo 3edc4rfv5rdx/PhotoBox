@@ -223,7 +223,7 @@ private fun AlbumRow(album: Album, selected: Boolean, onRename: () -> Unit, onDe
     ) {
         val cover = album.cover
         if (cover != null) {
-            PhotoThumbnail(cover.path, Modifier.size(ALBUM_COVER))
+            PhotoThumbnail(cover.path, size = 0, modified = album.modified, modifier = Modifier.size(ALBUM_COVER))
         } else {
             // An empty album: the app's own icon where the cover will be.
             Image(

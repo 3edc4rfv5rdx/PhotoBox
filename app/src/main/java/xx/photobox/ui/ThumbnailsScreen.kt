@@ -186,6 +186,8 @@ fun ThumbnailsScreen(
                         ) {
                             PhotoThumbnail(
                                 path = entry.item.file.path,
+                                size = entry.item.size,
+                                modified = entry.item.modified,
                                 maxDimension = decodeSize,
                                 corner = CELL_CORNER,
                                 modifier = Modifier.fillMaxSize(),

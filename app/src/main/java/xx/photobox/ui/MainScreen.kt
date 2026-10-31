@@ -103,7 +103,7 @@ fun MainScreen(
     var trashViewerPath by rememberSaveable { mutableStateOf<String?>(null) }
     var trashViewed by rememberSaveable { mutableStateOf<String?>(null) }
     val trashItems = remember(vm.trashEntries) {
-        vm.trashEntries.orEmpty().map { MediaItem(it.file, it.deletedAt, it.size) }
+        vm.trashEntries.orEmpty().map { MediaItem(it.file, it.deletedAt, it.size, it.deletedAt) }
     }
     // Where each trashed file came from, by its path in the trash: what it is called.
     val trashOriginals = remember(vm.trashEntries) {

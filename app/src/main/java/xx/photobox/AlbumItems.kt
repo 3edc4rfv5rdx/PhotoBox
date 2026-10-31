@@ -6,8 +6,12 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
 
-/** One photo or video in the open album. [taken] is when it was taken, or its file time without a record of that. */
-class MediaItem(val file: File, val taken: Long, val size: Long)
+/**
+ * One photo or video in the open album. [taken] is when it was taken, or its
+ * file time without a record of that; [size] and [modified] are the file's as
+ * listed, what tells it from another file put at the same path later.
+ */
+class MediaItem(val file: File, val taken: Long, val size: Long, val modified: Long)
 
 enum class ItemOrder { DATE, NAME, SIZE }
 

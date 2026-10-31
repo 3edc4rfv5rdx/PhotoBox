@@ -135,7 +135,7 @@ fun ViewerScreen(
     val rotation = rememberMediaRotation()
 
     // A new page, the photo turned under the fingers or turned by Rotate: each opens unzoomed.
-    val currentKey = sorted.getOrNull(pagerState.currentPage)?.file?.path?.let(::photoKey)
+    val currentKey = sorted.getOrNull(pagerState.currentPage)?.let(::itemKey)
     LaunchedEffect(pagerState.currentPage, rotation, currentKey) { zoom.reset() }
     LaunchedEffect(pagerState.settledPage) {
         sorted.getOrNull(pagerState.settledPage)?.let { onPage(it.file.path) }
@@ -155,12 +155,13 @@ fun ViewerScreen(
             .remoteKeys(onLeft = { pageBy(-1) }, onRight = { pageBy(1) }, onOk = { chrome = !chrome }),
     ) {
         val pageContent: @Composable PagerScope.(Int) -> Unit = { page ->
-            val path = sorted[page].file.path
+            val item = sorted[page]
+            val path = item.file.path
             PhotoPage(
-                path = path,
+                item = item,
                 rotation = rotation,
                 zoom = if (page == pagerState.currentPage) zoom else null,
-                next = sorted.getOrNull(page + 1)?.file?.path,
+                next = sorted.getOrNull(page + 1),
                 onTap = { chrome = !chrome },
                 onPlay = {
                     when (videoPlayer) {
@@ -321,25 +322,26 @@ private sealed interface PhotoState {
  */
 @Composable
 private fun PhotoPage(
-    path: String,
+    item: MediaItem,
     rotation: Int,
     zoom: PhotoZoom?,
-    next: String?,
+    next: MediaItem?,
     onTap: () -> Unit,
     onPlay: () -> Unit,
 ) {
+    val path = item.file.path
     val video = isVideo(path)
-    val state by produceState<PhotoState>(initialValue = PhotoState.Loading, key1 = photoKey(path)) {
+    val state by produceState<PhotoState>(initialValue = PhotoState.Loading, key1 = itemKey(item)) {
         // A video's still is not kept: it is cancelled when paged past, and a
         // kept one would hold that up.
         val bitmap = if (video) {
             withContext(Dispatchers.IO) { withCancellationSignal { decodeForScreen(path, it) } }
         } else {
-            loadPhoto(path).await()
+            loadPhoto(item).await()
         }
         value = if (bitmap != null) PhotoState.Loaded(bitmap) else PhotoState.Failed
         // Only once this one is up, so the two do not share the time it takes.
-        if (next != null && !isVideo(next)) loadPhoto(next)
+        if (next != null && !isVideo(next.file.path)) loadPhoto(next)
     }
     val currentZoom by rememberUpdatedState(zoom)
     val currentOnTap by rememberUpdatedState(onTap)
@@ -472,9 +474,13 @@ private val photoScope = MainScope()
 private fun decodeForScreen(path: String, signal: CancellationSignal): Bitmap? =
     decodeSampled(path, PHOTO_MAX_DIMENSION, signal, fit = true)
 
-/** The photo at [path] fitted to [PHOTO_MAX_DIMENSION], from [photoCache] or decoded once into it. */
-internal fun loadPhoto(path: String): Deferred<Bitmap?> {
-    val key = photoKey(path)
+/** [item]'s [photoKey]. */
+internal fun itemKey(item: MediaItem): String = photoKey(item.file.path, item.size, item.modified)
+
+/** [item]'s photo fitted to [PHOTO_MAX_DIMENSION], from [photoCache] or decoded once into it. */
+internal fun loadPhoto(item: MediaItem): Deferred<Bitmap?> {
+    val path = item.file.path
+    val key = itemKey(item)
     photoCache.get(key)?.let { return CompletableDeferred(it) }
     return photoLoads.getOrPut(key) {
         photoScope.async {
