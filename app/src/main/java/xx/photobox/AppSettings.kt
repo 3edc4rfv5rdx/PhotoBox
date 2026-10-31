@@ -73,6 +73,7 @@ object AppSettings {
     private const val KEY_VIDEO_PLAYER = "video_player"
     private const val KEY_SLIDE_SECONDS = "slide_seconds"
     private const val KEY_SLIDE_CAPTION = "slide_caption"
+    private const val KEY_SLIDE_MOTION = "slide_motion"
     private const val KEY_MEDIA_ROTATION = "media_rotation"
     private const val KEY_TRASH_DAYS = "trash_days"
 
@@ -117,6 +118,10 @@ object AppSettings {
     private val _slideCaption = MutableStateFlow(false)
     val slideCaption: StateFlow<Boolean> = _slideCaption.asStateFlow()
 
+    /** Whether each photo of a slideshow zooms and drifts slowly while it is up. */
+    private val _slideMotion = MutableStateFlow(false)
+    val slideMotion: StateFlow<Boolean> = _slideMotion.asStateFlow()
+
     /** How many days a file stays in the trash before it is deleted for good; one of [TRASH_DAYS]. */
     private val _trashDays = MutableStateFlow(DEFAULT_TRASH_DAYS)
     val trashDays: StateFlow<Int> = _trashDays.asStateFlow()
@@ -140,6 +145,7 @@ object AppSettings {
         _slideSeconds.value = prefs.getInt(KEY_SLIDE_SECONDS, DEFAULT_SLIDE_SECONDS).takeIf { it in SLIDE_SECONDS }
             ?: DEFAULT_SLIDE_SECONDS
         _slideCaption.value = prefs.getBoolean(KEY_SLIDE_CAPTION, false)
+        _slideMotion.value = prefs.getBoolean(KEY_SLIDE_MOTION, false)
         _trashDays.value = prefs.getInt(KEY_TRASH_DAYS, DEFAULT_TRASH_DAYS).takeIf { it in TRASH_DAYS }
             ?: DEFAULT_TRASH_DAYS
         val oldOff = !prefs.getBoolean(KEY_SENSOR_ROTATION_OLD, true)
@@ -195,6 +201,11 @@ object AppSettings {
     fun setSlideCaption(context: Context, enabled: Boolean) {
         _slideCaption.value = enabled
         prefs(context).edit { putBoolean(KEY_SLIDE_CAPTION, enabled) }
+    }
+
+    fun setSlideMotion(context: Context, enabled: Boolean) {
+        _slideMotion.value = enabled
+        prefs(context).edit { putBoolean(KEY_SLIDE_MOTION, enabled) }
     }
 
     fun setTrashDays(context: Context, days: Int) {

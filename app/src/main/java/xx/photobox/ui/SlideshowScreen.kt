@@ -3,6 +3,8 @@ package xx.photobox.ui
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -44,6 +46,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -55,6 +58,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import xx.photobox.MediaItem
 import xx.photobox.R
+import xx.photobox.SlideMotion
 import xx.photobox.SlideOrder
 import xx.photobox.albumOrder
 import xx.photobox.albumOrderAt
@@ -62,6 +66,7 @@ import xx.photobox.longerSlideSeconds
 import xx.photobox.shorterSlideSeconds
 import xx.photobox.next
 import xx.photobox.previous
+import xx.photobox.randomSlideMotion
 import xx.photobox.reconciled
 import xx.photobox.shuffledOrder
 import xx.photobox.startedOver
@@ -91,8 +96,11 @@ private const val END_MARK_ALPHA = 0.85f
 /** The caption's room from the screen's edges. */
 private val CAPTION_PADDING = 16.dp
 
-/** One photo up on the slideshow. A class of its own, so the same file shown again still counts as a new slide. */
-private class Slide(val path: String, val bitmap: Bitmap)
+/**
+ * One photo up on the slideshow. A class of its own, so the same file shown
+ * again still counts as a new slide — with a [motion] of its own.
+ */
+private class Slide(val path: String, val bitmap: Bitmap, val motion: SlideMotion = randomSlideMotion())
 
 /**
  * [photos] one after another from [start] to the last, each held [seconds]
@@ -111,7 +119,10 @@ private class Slide(val path: String, val bitmap: Bitmap)
  * the next start can go on from it; a shuffled one is not. With [caption]
  * each photo's date and name are written in its top corner, fading with it;
  * the menu switches it through [onCaption], and steps the time per photo
- * through [onSeconds], from the next photo on. A photo that
+ * through [onSeconds], from the next photo on. With [motion] each photo
+ * zooms slowly in or out and drifts across the middle, a way of its own
+ * picked at random, standing still while the show waits; the menu switches
+ * it through [onMotion]. A photo that
  * cannot be decoded is passed over in the direction being moved — forward
  * when there is nothing left the other way — and when none can, it closes by itself.
  */
@@ -123,6 +134,8 @@ fun SlideshowScreen(
     onSeconds: (Int) -> Unit,
     caption: Boolean,
     onCaption: (Boolean) -> Unit,
+    motion: Boolean,
+    onMotion: (Boolean) -> Unit,
     onShown: (String) -> Unit,
     onEnded: () -> Unit,
     onClose: () -> Unit,
@@ -264,11 +277,32 @@ fun SlideshowScreen(
             Crossfade(targetState = shown, animationSpec = tween(FADE_MS), label = "slide") { slide ->
                 if (slide != null) {
                     Box(Modifier.fillMaxSize()) {
+                        // From 0 as the photo fades in to 1 as it is gone again, held still
+                        // whenever the show waits; going on, it covers only what is left.
+                        val progress = remember(slide) { Animatable(0f) }
+                        val moving = motion && !paused && !ended && info == null
+                        LaunchedEffect(slide, moving) {
+                            if (!moving) return@LaunchedEffect
+                            val total = currentSeconds * 1000 + FADE_MS
+                            progress.animateTo(1f, tween(((1f - progress.value) * total).toInt(), easing = LinearEasing))
+                        }
                         Image(
                             bitmap = slide.bitmap.asImageBitmap(),
                             contentDescription = null,
                             contentScale = ContentScale.Fit,
-                            modifier = Modifier.fillMaxSize(),
+                            modifier = Modifier.fillMaxSize().then(
+                                if (motion) {
+                                    Modifier.graphicsLayer {
+                                        val frame = slide.motion.at(progress.value)
+                                        scaleX = frame.scale
+                                        scaleY = frame.scale
+                                        translationX = frame.x * size.width
+                                        translationY = frame.y * size.height
+                                    }
+                                } else {
+                                    Modifier
+                                },
+                            ),
                         )
                         if (caption) Caption(slide.path, taken[slide.path], Modifier.align(Alignment.TopEnd))
                     }
@@ -341,6 +375,10 @@ fun SlideshowScreen(
                             AppMenuCheckItem(stringResource(R.string.slideshow_caption), caption) {
                                 touched++
                                 onCaption(!caption)
+                            }
+                            AppMenuCheckItem(stringResource(R.string.slideshow_motion), motion) {
+                                touched++
+                                onMotion(!motion)
                             }
                             SlideTimeLine(seconds) {
                                 touched++

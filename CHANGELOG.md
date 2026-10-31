@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: The slideshow's ⚙ can zoom and drift each photo slowly, a random way each time
 - F: Dates with a time, in the slideshow's caption and in Info, show it on the 24-hour clock
 - F: The slideshow's ⚙ sets the time per photo
 - N: The slideshow's ⚙ can write each photo's date and name in its corner
