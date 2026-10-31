@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: Renaming a file or an album onto a name taken since the dialog opened no longer replaces what is there
 - F: The saved dates of photos that are gone are dropped, so that file no longer grows for ever
 - E: A RAW restored from the trash shows in other galleries at once, as its photo does
 - E: A file opened from another app is taken by its path only when it lies on the phone's storage or an SD card, and Share can no longer hand out the app's own files
