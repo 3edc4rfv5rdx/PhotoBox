@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: A file whose name holds a line break is no longer put in the trash, where it would come back under another name
 - E: A slideshow seen to the end is no longer offered to go on from its last photo
 - F: A long trash no longer stalls the screen working out its sizes
 - E: A photo being turned can no longer be damaged by the app being closed or the power going midway
