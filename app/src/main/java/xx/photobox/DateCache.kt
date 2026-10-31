@@ -37,6 +37,21 @@ class DateCache(private val store: File) {
     }
 
     /**
+     * Drops the entries of files directly in [dir] other than [present] — the
+     * ones a listing of it no longer found: renamed, moved, trashed, deleted.
+     * Other folders' entries are left for the readers of those folders. How
+     * many went.
+     */
+    @Synchronized
+    fun forgetGone(dir: File, present: Set<String>): Int {
+        load()
+        val gone = entries.keys.filter { path -> path !in present && File(path).parent == dir.path }
+        gone.forEach(entries::remove)
+        if (gone.isNotEmpty()) dirty = true
+        return gone.size
+    }
+
+    /**
      * Writes the entries out when any changed; a new file first, so a crash
      * mid-write leaves the old one whole. A write that fails — the phone's
      * storage full — leaves the old file as it was and is only a cache not

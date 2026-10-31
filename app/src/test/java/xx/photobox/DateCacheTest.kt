@@ -60,4 +60,22 @@ class DateCacheTest {
         assertEquals(1, store.readLines().size)
         assertNull(DateCache(store).get(File("/a/x\ry.jpg"), 1, 2))
     }
+
+    @Test
+    fun aFolderReadAgainForgetsItsFilesThatAreGone() {
+        val cache = DateCache(store)
+        cache.put(File("/d/a.jpg"), 1, 1, 1)
+        cache.put(File("/d/b.jpg"), 2, 2, 2)
+        cache.put(File("/d/sub/c.jpg"), 3, 3, 3)
+        cache.put(File("/e/b.jpg"), 4, 4, 4)
+        assertEquals(1, cache.forgetGone(File("/d"), setOf("/d/a.jpg", "/d/sub")))
+        cache.save()
+        val again = DateCache(store)
+        assertEquals(1L, again.get(File("/d/a.jpg"), 1, 1))
+        assertNull(again.get(File("/d/b.jpg"), 2, 2))
+        // Another folder's, and one a folder further down: not this listing's to judge.
+        assertEquals(3L, again.get(File("/d/sub/c.jpg"), 3, 3))
+        assertEquals(4L, again.get(File("/e/b.jpg"), 4, 4))
+        assertEquals(3, store.readLines().size)
+    }
 }

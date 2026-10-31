@@ -29,14 +29,19 @@ fun dateCache(context: Context): DateCache =
 /**
  * [dir]'s photos and videos, each with when it was taken. Dates come from
  * [cache] where it has them; the rest are read a few at a time and written
- * back. [onToRead] hears, on the caller's thread, how many must be read, and
- * [done] counts them as they are, for progress.
+ * back, and the cache forgets the files no longer in [dir]. [onToRead]
+ * hears, on the caller's thread, how many must be read, and [done] counts
+ * them as they are, for progress.
  */
 suspend fun readItems(dir: File, cache: DateCache, done: AtomicInteger, onToRead: (Int) -> Unit): List<MediaItem> {
     val known = ArrayList<MediaItem>()
     val unknown = ArrayList<Triple<File, Long, Long>>()
+    // Gone from the folder since last read; not when it could not be listed at all — a card taken out.
+    var forgotten = 0
     withContext(Dispatchers.IO) {
-        for (file in dir.listFiles().orEmpty()) {
+        val listed = dir.listFiles()
+        if (listed != null) forgotten = cache.forgetGone(dir, listed.mapTo(HashSet()) { it.path })
+        for (file in listed.orEmpty()) {
             if (!file.isFile || !isMedia(file)) continue
             val modified = file.lastModified()
             val size = file.length()
@@ -57,6 +62,6 @@ suspend fun readItems(dir: File, cache: DateCache, done: AtomicInteger, onToRead
             }.awaitAll()
         }
     }
-    if (read.isNotEmpty()) withContext(Dispatchers.IO) { cache.save() }
+    if (read.isNotEmpty() || forgotten > 0) withContext(Dispatchers.IO) { cache.save() }
     return known + read
 }
