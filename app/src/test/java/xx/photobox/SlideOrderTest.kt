@@ -141,4 +141,12 @@ class SlideOrderTest {
         assertEquals(added.toSet(), after.paths.drop(album.size - 1).toSet())
         assertEquals(order.current, after.current)
     }
+
+    @Test
+    fun aPlaceIsKeptOnlyInAlbumOrderWhileTheShowRuns() {
+        val running = albumOrder(album, 4)
+        assertEquals(album[4], running.frameToKeep(ended = false))
+        assertNull(running.frameToKeep(ended = true))
+        assertNull(running.withShuffle(true, album, Random(9)).frameToKeep(ended = false))
+    }
 }

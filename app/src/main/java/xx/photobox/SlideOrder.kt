@@ -12,6 +12,13 @@ data class SlideOrder(val paths: List<String>, val pos: Int, val shuffled: Boole
     val current: String? get() = paths.getOrNull(pos)
 }
 
+/**
+ * The photo up as the place a next show goes on from, or null when there is
+ * none to keep: a show [ended] — seen to the end, its place already forgotten
+ * — and a shuffled round, which is no place in the album.
+ */
+fun SlideOrder.frameToKeep(ended: Boolean): String? = current.takeIf { !ended && !shuffled }
+
 /** The album in its own order, at [at]. */
 fun albumOrder(photos: List<String>, at: Int): SlideOrder =
     SlideOrder(photos, at.coerceIn(0, maxOf(photos.lastIndex, 0)), shuffled = false)

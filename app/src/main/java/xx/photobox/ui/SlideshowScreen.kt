@@ -67,6 +67,7 @@ import xx.photobox.SlideMotion
 import xx.photobox.SlideOrder
 import xx.photobox.albumOrder
 import xx.photobox.albumOrderAt
+import xx.photobox.frameToKeep
 import xx.photobox.longerSlideSeconds
 import xx.photobox.shorterSlideSeconds
 import xx.photobox.next
@@ -265,8 +266,9 @@ fun SlideshowScreen(
         failedInARow = 0
         // A single photo is not faded into itself.
         if (shown?.path != path) shown = Slide(path, bitmap, withContext(Dispatchers.Default) { backdropOf(bitmap) })
-        // The place to go on from is a place in the album, which a shuffled round is not.
-        if (!order.shuffled) currentOnShown(path)
+        // Not once ended: the effect runs again for a reloaded album or a
+        // recreated screen, and would write back the place the end forgot.
+        order.frameToKeep(ended)?.let(currentOnShown)
         // Read ahead while this one is up, so the fade does not wait on a decode.
         order.paths.getOrNull(pos + step)?.let(items::get)?.let { loadPhoto(it) }
     }
