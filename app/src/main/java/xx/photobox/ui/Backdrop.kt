@@ -1,6 +1,7 @@
 package xx.photobox.ui
 
 import android.graphics.Bitmap
+import androidx.core.graphics.scale
 import kotlin.math.roundToInt
 
 /** The long side of a slide's backdrop: so few pixels that only the photo's colours are left of it. */
@@ -30,7 +31,7 @@ internal fun backdropSteps(width: Int, height: Int, side: Int = BACKDROP_SIDE): 
 internal fun backdropOf(photo: Bitmap): Bitmap {
     var current = photo
     for ((w, h) in backdropSteps(photo.width, photo.height)) {
-        val next = Bitmap.createScaledBitmap(current, w, h, true)
+        val next = current.scale(w, h)
         // Scaled to its own size it can come back as itself.
         if (current !== photo && next !== current) current.recycle()
         current = next

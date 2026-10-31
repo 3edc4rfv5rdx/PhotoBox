@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- R: The slideshow's blurred background scales through core-ktx
 - E: Opening the trash while files are being deleted no longer loses one of them, and a file the trash had lost shows again, restored to Pictures/Restored
 - E: A move onto the SD card deletes the originals only once the copies are really written to the card
 - N: The slideshow's ⚙ can fill the screen round each photo with a heavy, dimmed blur of it
