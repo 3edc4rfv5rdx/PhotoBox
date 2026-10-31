@@ -173,4 +173,16 @@ class TrashTest {
         assertNull(Trash.parseLegacyName("-a.jpg"))
         assertNull(Trash.parseLegacyName("123-"))
     }
+
+    @Test
+    fun anEntrysSizeIsReadOnceWhenListed() {
+        file("A/p.jpg", "12345")
+        file("A/p.dng", "123")
+        Trash.moveToTrash(File(tmp.root, "A/p.jpg"), trash, now = 8)
+        val entry = list().single()
+        assertEquals(8L, entry.size)
+        entry.file.delete()
+        entry.companions.forEach { it.first.delete() }
+        assertEquals(8L, entry.size)
+    }
 }

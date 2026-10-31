@@ -33,9 +33,12 @@ class TrashEntry(
     val deletedAt: Long,
     val companions: List<Pair<File, File>>,
 ) {
-    /** Bytes it frees for good, companions included. */
-    val size: Long
-        get() = file.length() + companions.sumOf { it.first.length() }
+    /**
+     * Bytes it frees for good, companions included — as they were when the
+     * trash was listed, off the main thread: the screen asks for it on every
+     * redraw, and reading it there would stat each file each time.
+     */
+    val size: Long = file.length() + companions.sumOf { it.first.length() }
 }
 
 enum class RestoreResult { OK, EXISTS, FAILED }
