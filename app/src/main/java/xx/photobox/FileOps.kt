@@ -3,6 +3,8 @@ package xx.photobox
 import androidx.exifinterface.media.ExifInterface
 import java.io.File
 import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.StandardOpenOption
@@ -89,14 +91,39 @@ enum class Transfer { MOVE, COPY }
  * every file alike, so a photo and its RAW stay a pair. Never over a file
  * already there. A move is a rename where it can be; onto another volume,
  * where a rename cannot go, it is a copy, and the originals are deleted once
- * every copy is whole. All or none: should one file not go, what was already
+ * every copy is whole and on the medium — see [copyGroup]. All or none: should one file not go, what was already
  * done is undone. A copy reports each piece written to [onBytes]. Null on failure.
  */
 fun transferGroup(files: List<File>, dir: File, mode: Transfer, onBytes: (Long) -> Unit = {}): Transferred? {
     if (files.isEmpty()) return null
     val targets = freeTargets(files, dir)
     if (mode == Transfer.MOVE && renameAll(files, targets)) return Transferred(targets, emptyList())
-    if (!copyAll(files, targets, onBytes)) return null
+    return copyGroup(files, targets, mode, onBytes)
+}
+
+/** Forces what was written through [FileChannel] onto its device; throws [IOException] when it cannot. */
+internal fun interface Syncer {
+    fun sync(channel: FileChannel)
+}
+
+private val DeviceSync = Syncer { it.force(true) }
+
+/**
+ * [files] copied to [targets], the originals deleted after for a [Transfer.MOVE].
+ * A move deletes the only other copy, so each of its copies is forced onto the
+ * medium with [sync] and checked for length before any original goes: a card
+ * pulled, or the power lost, as the move ends must not leave a copy still in
+ * memory and the original gone. A failed sync is a failed copy. A copy is not
+ * synced: its original stays, and many small files would only be slower for it.
+ */
+internal fun copyGroup(
+    files: List<File>,
+    targets: List<File>,
+    mode: Transfer,
+    onBytes: (Long) -> Unit,
+    sync: Syncer = DeviceSync,
+): Transferred? {
+    if (!copyAll(files, targets, onBytes, sync.takeIf { mode == Transfer.MOVE })) return null
     val left = if (mode == Transfer.MOVE) files.filter { !it.delete() && it.exists() } else emptyList()
     return Transferred(targets, left)
 }
@@ -128,10 +155,10 @@ internal fun numberedName(name: String, n: Int): String {
 }
 
 /** Each of [from] copied to the same place in [to], all or none: a failure deletes the copies already made. */
-private fun copyAll(from: List<File>, to: List<File>, onBytes: (Long) -> Unit): Boolean {
+private fun copyAll(from: List<File>, to: List<File>, onBytes: (Long) -> Unit, sync: Syncer?): Boolean {
     val made = mutableListOf<File>()
     for ((source, target) in from.zip(to)) {
-        if (!copyFile(source, target, onBytes)) {
+        if (!copyFile(source, target, onBytes, sync)) {
             made.forEach { it.delete() }
             return false
         }
@@ -146,20 +173,25 @@ private const val COPY_BUFFER = 256 * 1024
 /**
  * [from] copied to [to], which must not exist yet, with [from]'s time kept:
  * the grid falls back on it for a file with no date of its own. Each piece
- * written goes to [onBytes]. A part-made copy is deleted.
+ * written goes to [onBytes]. With [sync], the copy is forced onto its device
+ * before it is closed, and must come out as long as [from]. A part-made copy
+ * is deleted.
  */
-private fun copyFile(from: File, to: File, onBytes: (Long) -> Unit): Boolean = try {
+private fun copyFile(from: File, to: File, onBytes: (Long) -> Unit, sync: Syncer?): Boolean = try {
     from.inputStream().use { input ->
-        Files.newOutputStream(to.toPath(), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use { output ->
+        FileChannel.open(to.toPath(), StandardOpenOption.CREATE_NEW, StandardOpenOption.WRITE).use { output ->
             val buffer = ByteArray(COPY_BUFFER)
             while (true) {
                 val read = input.read(buffer)
                 if (read < 0) break
-                output.write(buffer, 0, read)
+                val piece = ByteBuffer.wrap(buffer, 0, read)
+                while (piece.hasRemaining()) output.write(piece)
                 onBytes(read.toLong())
             }
+            sync?.sync(output)
         }
     }
+    if (sync != null && to.length() != from.length()) throw IOException("Short copy of ${from.path}")
     to.setLastModified(from.lastModified())
     true
 } catch (e: IOException) {

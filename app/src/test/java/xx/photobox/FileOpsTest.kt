@@ -116,4 +116,51 @@ class FileOpsTest {
         assertNull(transferGroup(listOf(photo), File(tmp.root, "Missing"), Transfer.MOVE))
         assertTrue(photo.exists())
     }
+
+    // ---------- A move by copy, onto another volume ----------
+
+    /** Counts its calls, and fails the [failOn]th, as a card pulled mid-move would. */
+    private class CountingSync(private val failOn: Int = 0) : Syncer {
+        var calls = 0
+        override fun sync(channel: java.nio.channels.FileChannel) {
+            if (++calls == failOn) throw java.io.IOException("sync failed")
+        }
+    }
+
+    @Test
+    fun aMoveByCopyKeepsEveryOriginalWhenASyncFails() {
+        val photo = file("A/p.jpg")
+        val raw = file("A/p.dng")
+        val targets = listOf(File(dir("B"), "p.jpg"), File(tmp.root, "B/p.dng"))
+        val sync = CountingSync(failOn = 2)
+        assertNull(copyGroup(listOf(photo, raw), targets, Transfer.MOVE, {}, sync))
+        assertEquals(2, sync.calls)
+        assertTrue(photo.exists() && raw.exists())
+        assertFalse(targets.any { it.exists() })
+    }
+
+    @Test
+    fun aMoveByCopySyncsEveryCopyThenDeletesTheOriginals() {
+        val photo = file("A/p.jpg", text = "photo")
+        val raw = file("A/p.dng", text = "raw")
+        val targets = listOf(File(dir("B"), "p.jpg"), File(tmp.root, "B/p.dng"))
+        val sync = CountingSync()
+        val moved = copyGroup(listOf(photo, raw), targets, Transfer.MOVE, {}, sync)!!
+        assertEquals(2, sync.calls)
+        assertEquals(emptyList<File>(), moved.left)
+        assertFalse(photo.exists() || raw.exists())
+        assertEquals("photo", targets[0].readText())
+        assertEquals("raw", targets[1].readText())
+        assertEquals(1_000_000L, targets[0].lastModified())
+    }
+
+    @Test
+    fun aCopyIsNotSynced() {
+        val photo = file("A/p.jpg")
+        val target = File(dir("B"), "p.jpg")
+        val sync = CountingSync(failOn = 1)
+        assertEquals(listOf(target), copyGroup(listOf(photo), listOf(target), Transfer.COPY, {}, sync)!!.targets)
+        assertEquals(0, sync.calls)
+        assertTrue(photo.exists() && target.exists())
+    }
 }
