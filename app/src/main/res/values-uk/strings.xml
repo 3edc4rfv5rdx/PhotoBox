@@ -66,6 +66,7 @@
     <string name="slideshow_repeat">По колу</string>
     <string name="slideshow_caption">Підпис</string>
     <string name="slideshow_motion">Рух кадру</string>
+    <string name="slideshow_backdrop">Розмитий фон</string>
     <string name="slideshow_shorter">Коротше</string>
     <string name="slideshow_longer">Довше</string>
     <string name="info">Відомості</string>

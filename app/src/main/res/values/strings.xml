@@ -66,6 +66,7 @@
     <string name="slideshow_repeat">Repeat</string>
     <string name="slideshow_caption">Caption</string>
     <string name="slideshow_motion">Pan and zoom</string>
+    <string name="slideshow_backdrop">Blurred background</string>
     <string name="slideshow_shorter">Shorter</string>
     <string name="slideshow_longer">Longer</string>
     <string name="info">Info</string>

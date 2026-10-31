@@ -44,7 +44,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -56,6 +58,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import xx.photobox.MediaItem
@@ -104,6 +107,12 @@ private const val CONTROLS_SHOWN_MS = 3000L
 private val END_MARK = 160.dp
 private const val END_MARK_ALPHA = 0.85f
 
+/** The backdrop dimmed under the photo, so it stays behind it rather than beside it. */
+private const val BACKDROP_DIM = 0.45f
+
+/** Smooths the backdrop's few pixels over further where the system can blur (API 31 up). */
+private val BACKDROP_BLUR = 24.dp
+
 /** The caption's room from the screen's edges. */
 private val CAPTION_PADDING = 16.dp
 
@@ -111,7 +120,12 @@ private val CAPTION_PADDING = 16.dp
  * One photo up on the slideshow. A class of its own, so the same file shown
  * again still counts as a new slide — with a [motion] of its own.
  */
-private class Slide(val path: String, val bitmap: Bitmap, val motion: SlideMotion = randomSlideMotion())
+private class Slide(
+    val path: String,
+    val bitmap: Bitmap,
+    val backdrop: Bitmap,
+    val motion: SlideMotion = randomSlideMotion(),
+)
 
 /**
  * [photos] one after another from [start] to the last, each held [seconds]
@@ -133,7 +147,9 @@ private class Slide(val path: String, val bitmap: Bitmap, val motion: SlideMotio
  * through [onSeconds], from the next photo on. With [motion] each photo
  * zooms slowly in or out and drifts across the middle, a way of its own
  * picked at random, standing still while the show waits; the menu switches
- * it through [onMotion]. A photo that
+ * it through [onMotion]. With [backdrop] the screen round a photo is filled
+ * with the photo itself, so blurred and dimmed that only its colours are
+ * left, and still while the photo moves; switched through [onBackdrop]. A photo that
  * cannot be decoded is passed over in the direction being moved — forward
  * when there is nothing left the other way — and when none can, it closes by itself.
  */
@@ -147,6 +163,8 @@ fun SlideshowScreen(
     onCaption: (Boolean) -> Unit,
     motion: Boolean,
     onMotion: (Boolean) -> Unit,
+    backdrop: Boolean,
+    onBackdrop: (Boolean) -> Unit,
     onShown: (String) -> Unit,
     onEnded: () -> Unit,
     onClose: () -> Unit,
@@ -245,7 +263,7 @@ fun SlideshowScreen(
         }
         failedInARow = 0
         // A single photo is not faded into itself.
-        if (shown?.path != path) shown = Slide(path, bitmap)
+        if (shown?.path != path) shown = Slide(path, bitmap, withContext(Dispatchers.Default) { backdropOf(bitmap) })
         // The place to go on from is a place in the album, which a shuffled round is not.
         if (!order.shuffled) currentOnShown(path)
         // Read ahead while this one is up, so the fade does not wait on a decode.
@@ -290,6 +308,16 @@ fun SlideshowScreen(
                     Box(Modifier.fillMaxSize()) {
                         // From 0 as the photo fades in to 1 as it is gone again, held still
                         // whenever the show waits; going on, it covers only what is left.
+                        if (backdrop) {
+                            Image(
+                                bitmap = slide.backdrop.asImageBitmap(),
+                                contentDescription = null,
+                                contentScale = ContentScale.Crop,
+                                filterQuality = FilterQuality.Low,
+                                modifier = Modifier.fillMaxSize().blur(BACKDROP_BLUR),
+                            )
+                            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = BACKDROP_DIM)))
+                        }
                         val progress = remember(slide) { Animatable(0f) }
                         val moving = motion && !paused && !ended && info == null
                         LaunchedEffect(slide, moving) {
@@ -392,6 +420,10 @@ fun SlideshowScreen(
                             AppMenuCheckItem(stringResource(R.string.slideshow_motion), motion) {
                                 touched++
                                 onMotion(!motion)
+                            }
+                            AppMenuCheckItem(stringResource(R.string.slideshow_backdrop), backdrop) {
+                                touched++
+                                onBackdrop(!backdrop)
                             }
                             SlideTimeLine(seconds) {
                                 touched++

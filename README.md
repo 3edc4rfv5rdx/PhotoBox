@@ -30,8 +30,9 @@ shows what is really there, hidden folders included if you want them.
 - **Slideshow**: crossfades through the album, 1 to 30 seconds a photo, with
   pause, previous, next and info; picks up where it stopped. Its ⚙ shuffles
   the whole album, each photo once, repeats it round and round, writes
-  each photo's date and name in its corner, sets the time per photo, and
-  slowly zooms and drifts each photo a random way.
+  each photo's date and name in its corner, sets the time per photo,
+  slowly zooms and drifts each photo a random way, and fills the screen round
+  it with a heavy blur of it.
 - **Info**: size, resolution, date taken, camera settings and the place on a map.
 - **Rotation**: photos, videos and the slideshow turn with the sensor even
   with auto-rotate off, while the app stays upright — or not, as set.
