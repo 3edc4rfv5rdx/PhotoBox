@@ -2,7 +2,6 @@ package xx.photobox.ui
 
 import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
@@ -33,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.MotionDurationScale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shadow
@@ -56,6 +57,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.withContext
 import xx.photobox.MediaItem
 import xx.photobox.R
 import xx.photobox.SlideMotion
@@ -74,6 +76,15 @@ import xx.photobox.withShuffle
 import java.io.File
 
 private const val FADE_MS = 1000
+
+/**
+ * Runs the show's own animations at their real length even with the phone's
+ * animations turned off: the fade and the motion are what a slideshow is, and
+ * the motion is switched on by hand.
+ */
+private object FullMotion : MotionDurationScale {
+    override val scaleFactor: Float get() = 1f
+}
 
 /** How long a slideshow waits after Go on before it moves on, unless its own time is shorter. */
 private const val RESUME_WAIT_MS = 3000L
@@ -274,7 +285,7 @@ fun SlideshowScreen(
         contentAlignment = Alignment.Center,
     ) {
         RotatedFrame(rotation, Modifier.fillMaxSize()) {
-            Crossfade(targetState = shown, animationSpec = tween(FADE_MS), label = "slide") { slide ->
+            SlideFade(shown) { slide ->
                 if (slide != null) {
                     Box(Modifier.fillMaxSize()) {
                         // From 0 as the photo fades in to 1 as it is gone again, held still
@@ -284,7 +295,9 @@ fun SlideshowScreen(
                         LaunchedEffect(slide, moving) {
                             if (!moving) return@LaunchedEffect
                             val total = currentSeconds * 1000 + FADE_MS
-                            progress.animateTo(1f, tween(((1f - progress.value) * total).toInt(), easing = LinearEasing))
+                            withContext(FullMotion) {
+                                progress.animateTo(1f, tween(((1f - progress.value) * total).toInt(), easing = LinearEasing))
+                            }
                         }
                         Image(
                             bitmap = slide.bitmap.asImageBitmap(),
@@ -422,6 +435,40 @@ fun SlideshowScreen(
         }
 
         info?.let { InfoDialog(File(it), onDismiss = { info = null }) }
+    }
+}
+
+/**
+ * [target] faded in over the slide before it, [FADE_MS] long whatever the
+ * phone's animation setting. Each slide keeps its own composition — and so its
+ * motion — as it goes from coming in to going out. A new target arriving mid-fade
+ * fades in over the one that was coming in; the one before that goes at once.
+ * [content] gets null for the wait before the first photo.
+ */
+@Composable
+private fun SlideFade(target: Slide?, content: @Composable (Slide?) -> Unit) {
+    var front by remember { mutableStateOf(target) }
+    var back by remember { mutableStateOf<Slide?>(null) }
+    val fade = remember { Animatable(1f) }
+    LaunchedEffect(target) {
+        if (target === front) return@LaunchedEffect
+        back = front
+        front = target
+        fade.snapTo(0f)
+        withContext(FullMotion) { fade.animateTo(1f, tween(FADE_MS)) }
+        back = null
+    }
+    Box(Modifier.fillMaxSize()) {
+        if (front == null) content(null)
+        // One loop, so a slide moving from front to back keeps its composition.
+        for (slide in listOfNotNull(back, front)) {
+            key(slide) {
+                val coming = slide === front
+                Box(Modifier.fillMaxSize().graphicsLayer { alpha = if (coming) fade.value else 1f - fade.value }) {
+                    content(slide)
+                }
+            }
+        }
     }
 }
 
