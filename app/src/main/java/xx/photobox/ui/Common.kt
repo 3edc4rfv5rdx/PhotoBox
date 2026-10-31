@@ -57,6 +57,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.view.WindowCompat
@@ -172,8 +173,9 @@ fun formatCount(n: Int): String = NumberFormat.getIntegerInstance().format(n)
 val LARGE_BUTTON = 48.dp
 val LARGE_ICON = 28.dp
 
-/** Every icon button in a top bar: [LARGE_BUTTON] with a [LARGE_ICON] glyph. Without a
- * [tint] the glyph takes the content colour, which also dims it while disabled. */
+/** Every icon button in a top bar: [LARGE_BUTTON] with a [LARGE_ICON] glyph, unless given
+ * [size] and [iconSize]. Without a [tint] the glyph takes the content colour, which also
+ * dims it while disabled. */
 @Composable
 fun LargeIconButton(
     icon: ImageVector,
@@ -181,12 +183,14 @@ fun LargeIconButton(
     onClick: () -> Unit,
     enabled: Boolean = true,
     tint: Color? = null,
+    size: Dp = LARGE_BUTTON,
+    iconSize: Dp = LARGE_ICON,
 ) {
-    IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(LARGE_BUTTON)) {
+    IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(size)) {
         if (tint == null) {
-            Icon(icon, contentDescription, Modifier.size(LARGE_ICON))
+            Icon(icon, contentDescription, Modifier.size(iconSize))
         } else {
-            Icon(icon, contentDescription, Modifier.size(LARGE_ICON), tint = tint)
+            Icon(icon, contentDescription, Modifier.size(iconSize), tint = tint)
         }
     }
 }

@@ -66,6 +66,10 @@ private val CONTROLS_GAP = 12.dp
 private val CONTROLS_MIDDLE_GAP = 20.dp
 private val CONTROLS_CORNER = 28.dp
 
+/** Previous, play and next: the buttons a show is driven by, a size up from the rest. */
+private val DRIVE_BUTTON = 56.dp
+private val DRIVE_ICON = 36.dp
+
 /** How long the controls stay up after the last touch. */
 private const val CONTROLS_SHOWN_MS = 3000L
 
@@ -289,6 +293,8 @@ fun SlideshowScreen(
                         stringResource(R.string.slideshow_previous),
                         touch { move(-1) },
                         tint = Color.White,
+                        size = DRIVE_BUTTON,
+                        iconSize = DRIVE_ICON,
                     )
                     Spacer(Modifier.width(CONTROLS_GAP))
                     // Stays open while its lines are switched, so both can be set at once.
@@ -322,6 +328,8 @@ fun SlideshowScreen(
                         ),
                         touch(::playPause),
                         tint = Color.White,
+                        size = DRIVE_BUTTON,
+                        iconSize = DRIVE_ICON,
                     )
                     Spacer(Modifier.width(CONTROLS_MIDDLE_GAP))
                     LargeIconButton(
@@ -336,6 +344,8 @@ fun SlideshowScreen(
                         stringResource(R.string.slideshow_next),
                         touch { move(1) },
                         tint = Color.White,
+                        size = DRIVE_BUTTON,
+                        iconSize = DRIVE_ICON,
                     )
                 }
             }

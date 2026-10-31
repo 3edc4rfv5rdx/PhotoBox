@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: The slideshow's previous, play and next buttons are bigger
 - F: Play sits in the middle of the slideshow's controls, info to its right
 - F: The slideshow starts with its controls up for a few seconds
 - N: The slideshow's ⚙ shuffles the whole album, each photo once, and repeats the show round and round
