@@ -196,4 +196,12 @@ class TrashTest {
         assertTrue(list().isEmpty())
         assertFalse(File(trash, "9.path").exists())
     }
+
+    @Test
+    fun aRestoreNamesTheRawItPutsBackToo() {
+        val photo = file("A/p.jpg")
+        val raw = file("A/p.dng")
+        Trash.moveToTrash(photo, trash, now = 10)
+        assertEquals(listOf(photo.path, raw.path), list().single().restoredPaths)
+    }
 }

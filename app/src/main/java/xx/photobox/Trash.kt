@@ -39,6 +39,10 @@ class TrashEntry(
      * redraw, and reading it there would stat each file each time.
      */
     val size: Long = file.length() + companions.sumOf { it.first.length() }
+
+    /** Every path a restore puts a file back at, companions included: what the media index is told about. */
+    val restoredPaths: List<String>
+        get() = listOf(original.path) + companions.map { it.second.path }
 }
 
 enum class RestoreResult { OK, EXISTS, FAILED }

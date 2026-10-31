@@ -540,7 +540,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     fun restore(entry: TrashEntry) = changeTrash {
         when (Trash.restore(entry)) {
             RestoreResult.OK -> {
-                announceChanged(getApplication(), listOf(entry.original.path))
+                announceChanged(getApplication(), entry.restoredPaths)
                 null
             }
             RestoreResult.EXISTS -> FileNotice.RESTORE_EXISTS
@@ -555,7 +555,7 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
     /** Puts back everything it can; what would land on a file already there stays in the trash. */
     fun restoreAll() = changeAllOfTrash(TrashJob.RESTORE) { entry ->
         (Trash.restore(entry) == RestoreResult.OK).also { ok ->
-            if (ok) announceChanged(getApplication(), listOf(entry.original.path))
+            if (ok) announceChanged(getApplication(), entry.restoredPaths)
         }
     }
 
