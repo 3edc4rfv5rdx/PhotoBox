@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
@@ -55,6 +56,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
@@ -80,7 +82,6 @@ import java.util.Locale
 // built on this skeleton.
 val WindowLight = Color(0xFFF1F2F4)
 val WindowDark = Color(0xFF121212)
-private val TonalButtonDark = Color(0xFF5A5A5A)
 
 // Material3's baseline `error` is a soft, low-chroma rose in the dark scheme
 // (meant for text on a dark surface, not a button fill) — nowhere near as
@@ -108,9 +109,6 @@ private val DarkColors = darkColorScheme(
     surfaceContainer = Color(0xFF242424),
     surfaceContainerHigh = Color(0xFF2A2A2A),
     surfaceContainerHighest = Color(0xFF303030),
-    // Tonal buttons must read as buttons against the dark window.
-    secondaryContainer = TonalButtonDark,
-    onSecondaryContainer = Color.White,
     error = ErrorRed,
     onError = Color.White,
 )
@@ -141,11 +139,42 @@ fun isDarkTheme(mode: ThemeMode, systemInDark: Boolean): Boolean = when (mode) {
 @Composable
 fun PhotoBoxTheme(themeMode: ThemeMode, accentIndex: Int, content: @Composable () -> Unit) {
     val dark = isDarkTheme(themeMode, isSystemInDarkTheme())
-    val scheme = (if (dark) DarkColors else LightColors).copy(
-        primary = accentAt(accentIndex),
+    MaterialTheme(colorScheme = accentScheme(dark, accentAt(accentIndex)), content = content)
+}
+
+/** How much of the accent a container takes over the window it lies on: a pale wash in the light theme, deeper in the dark. */
+private const val ACCENT_WASH_LIGHT = 0.18f
+private const val ACCENT_WASH_DARK = 0.45f
+
+/**
+ * The theme's colours with every one Material would paint its own lilac in
+ * taken from [accent] instead: the fill of buttons and of tonal ones such as a
+ * dialog's Cancel, their containers, and the tint of raised surfaces.
+ */
+internal fun accentScheme(dark: Boolean, accent: Color): ColorScheme {
+    val base = if (dark) DarkColors else LightColors
+    val container = if (dark) {
+        lerp(base.surfaceContainerHigh, accent, ACCENT_WASH_DARK)
+    } else {
+        lerp(Color.White, accent, ACCENT_WASH_LIGHT)
+    }
+    val onContainer = if (dark) Color.White else base.onSurface
+    return base.copy(
+        primary = accent,
         onPrimary = Color.White,
+        primaryContainer = container,
+        onPrimaryContainer = onContainer,
+        inversePrimary = accent,
+        secondary = accent,
+        onSecondary = Color.White,
+        secondaryContainer = container,
+        onSecondaryContainer = onContainer,
+        tertiary = accent,
+        onTertiary = Color.White,
+        tertiaryContainer = container,
+        onTertiaryContainer = onContainer,
+        surfaceTint = accent,
     )
-    MaterialTheme(colorScheme = scheme, content = content)
 }
 
 // ---------- Text ----------
