@@ -26,6 +26,7 @@ import kotlinx.coroutines.withContext
 import xx.photobox.FileInfo
 import xx.photobox.R
 import xx.photobox.exposureText
+import xx.photobox.megapixelsText
 import xx.photobox.readFileInfo
 import xx.photobox.trimmedNumber
 import java.io.File
@@ -61,7 +62,11 @@ fun InfoDialog(file: File, onDismiss: () -> Unit, shownAs: File = file) {
                     InfoLine(stringResource(R.string.info_folder), shownAs.parent.orEmpty())
                     InfoLine(stringResource(R.string.info_size), formatSize(context, i.size))
                     if (i.width != null && i.height != null) {
-                        InfoLine(stringResource(R.string.info_resolution), "${i.width} × ${i.height}")
+                        val size = "${i.width} × ${i.height}"
+                        // A video's frame is not counted in megapixels.
+                        val mp = if (i.durationMs == null) megapixelsText(i.width, i.height) else null
+                        val shown = mp?.let { "$size (${stringResource(R.string.unit_megapixels, it)})" } ?: size
+                        InfoLine(stringResource(R.string.info_resolution), shown)
                     }
                     i.durationMs?.let { InfoLine(stringResource(R.string.info_duration), formatClock(it)) }
                     i.taken?.let { InfoLine(stringResource(R.string.info_taken), formatDateTime(context, it)) }

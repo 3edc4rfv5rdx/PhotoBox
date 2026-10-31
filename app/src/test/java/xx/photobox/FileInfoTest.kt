@@ -37,4 +37,12 @@ class FileInfoTest {
         assertNull(parseIso6709("nowhere"))
         assertNull(parseIso6709("+95.0+10.0/"))
     }
+
+    @Test
+    fun megapixelsToOneDecimal() {
+        assertEquals("9.6", megapixelsText(4624, 2084))
+        assertEquals("12", megapixelsText(4000, 3000))
+        assertEquals("0.1", megapixelsText(320, 240))
+        assertNull(megapixelsText(100, 100))
+    }
 }

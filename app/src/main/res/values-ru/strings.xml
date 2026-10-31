@@ -83,6 +83,7 @@
     <string name="close">Закрыть</string>
     <string name="unit_seconds">%1$s с</string>
     <string name="unit_millimetres">%1$s мм</string>
+    <string name="unit_megapixels">%1$s Мп</string>
     <string name="add">Добавить</string>
     <string name="add_root">Добавить папку поиска</string>
     <string name="root_remove">Убрать из поиска</string>

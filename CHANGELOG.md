@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Info shows a photo's resolution in megapixels as well
 - I: 99-CopyToAPKX.sh makes an .apkx for every ABI in LINK_ABIS, armeabi-v7a too
 - E: Picking a photo for another app no longer changes the album PhotoBox opens next
 - E: Renaming a file or an album onto a name taken since the dialog opened no longer replaces what is there

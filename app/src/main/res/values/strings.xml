@@ -83,6 +83,7 @@
     <string name="close">Close</string>
     <string name="unit_seconds">%1$s s</string>
     <string name="unit_millimetres">%1$s mm</string>
+    <string name="unit_megapixels">%1$s MP</string>
     <string name="add">Add</string>
     <string name="add_root">Add search folder</string>
     <string name="root_remove">Remove from search</string>

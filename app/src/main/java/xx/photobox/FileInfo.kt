@@ -125,6 +125,10 @@ internal fun exposureText(seconds: Double): String =
 internal fun trimmedNumber(value: Double): String =
     String.format(Locale.ROOT, "%.1f", value).removeSuffix(".0")
 
+/** A picture's size in megapixels, one decimal at most: "9.6"; null when it comes to less than 0.1, too small to be worth saying. */
+internal fun megapixelsText(width: Int, height: Int): String? =
+    (width.toDouble() * height / 1_000_000).takeIf { it >= 0.05 }?.let(::trimmedNumber)
+
 /**
  * A video's place as its container writes it, ISO 6709: "+37.4219-122.0840/",
  * an altitude sometimes following. Null when there is none or it does not parse.
