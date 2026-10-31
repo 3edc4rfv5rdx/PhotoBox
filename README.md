@@ -28,7 +28,8 @@ shows what is really there, hidden folders included if you want them.
 - **Trash**: its own, one per storage in `Documents/PhotoBox/.Trash`, with
   restore, delete for good and auto-cleanup after 7 to 90 days.
 - **Slideshow**: crossfades through the album, 1 to 30 seconds a photo, with
-  pause, previous, next and info; picks up where it stopped.
+  pause, previous, next and info; picks up where it stopped. Its ⚙ shuffles
+  the whole album, each photo once, and repeats it round and round.
 - **Info**: size, resolution, date taken, camera settings and the place on a map.
 - **Rotation**: photos, videos and the slideshow turn with the sensor even
   with auto-rotate off, while the app stays upright — or not, as set.

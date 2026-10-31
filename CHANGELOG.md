@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- N: The slideshow's ⚙ shuffles the whole album, each photo once, and repeats the show round and round
 ## v0.3.39 (2026-10-30)
 - F: Moving and copying show their progress by bytes, with the sizes, so a large video copied to the SD card moves the bar
 - E: Renaming the photo a slideshow stopped on no longer makes the next one start over

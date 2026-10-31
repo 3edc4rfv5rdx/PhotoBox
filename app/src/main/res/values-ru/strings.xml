@@ -61,6 +61,9 @@
     <string name="slideshow_resume">Продолжить</string>
     <string name="slideshow_from_start">Сначала</string>
     <string name="slideshow_continue">Продолжить</string>
+    <string name="slideshow_options">Настройки показа</string>
+    <string name="slideshow_shuffle">Случайный порядок</string>
+    <string name="slideshow_repeat">По кругу</string>
     <string name="info">Сведения</string>
     <string name="info_name">Имя</string>
     <string name="info_folder">Папка</string>

@@ -61,6 +61,9 @@
     <string name="slideshow_resume">Go on</string>
     <string name="slideshow_from_start">From the start</string>
     <string name="slideshow_continue">Continue</string>
+    <string name="slideshow_options">Show settings</string>
+    <string name="slideshow_shuffle">Shuffle</string>
+    <string name="slideshow_repeat">Repeat</string>
     <string name="info">Info</string>
     <string name="info_name">Name</string>
     <string name="info_folder">Folder</string>
