@@ -95,7 +95,7 @@ fun AlbumsScreen(
     }
     Column(modifier.fillMaxSize()) {
         when {
-            sections == null -> ProgressState(stringResource(R.string.albums_scanning))
+            sections == null -> ProgressState(stringResource(R.string.albums_scanning), Modifier.fillMaxSize())
 
             else -> {
                 if (scanning) LinearProgressIndicator(Modifier.fillMaxWidth())

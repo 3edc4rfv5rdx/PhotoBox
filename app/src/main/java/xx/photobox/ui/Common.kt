@@ -448,11 +448,12 @@ fun AppScreen(
 }
 
 /**
- * Work under way, in the middle of [modifier]'s space: a bar when its
- * [progress] is known, a spinner when not, and [text] under either.
+ * Work under way, in the middle of [modifier]'s space — give it the space to
+ * fill: a bar when its [progress] is known, a spinner when not, and [text]
+ * under either.
  */
 @Composable
-fun ProgressState(text: String?, modifier: Modifier = Modifier.fillMaxSize(), progress: (() -> Float)? = null) {
+fun ProgressState(text: String?, modifier: Modifier = Modifier, progress: (() -> Float)? = null) {
     Column(
         modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

@@ -214,10 +214,11 @@ internal fun ReadingDates(done: Int, total: Int) {
     if (total > 0) {
         ProgressState(
             text = stringResource(R.string.reading_dates, formatCount(done), formatCount(total)),
+            modifier = Modifier.fillMaxSize(),
             progress = { done.toFloat() / total },
         )
     } else {
-        ProgressState(text = null)
+        ProgressState(text = null, modifier = Modifier.fillMaxSize())
     }
 }
 
