@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- F: Info shows the folder of a photo on the phone's own storage without /storage/emulated/0
 - F: Info shows a photo's resolution in megapixels as well
 - I: 99-CopyToAPKX.sh makes an .apkx for every ABI in LINK_ABIS, armeabi-v7a too
 - E: Picking a photo for another app no longer changes the album PhotoBox opens next

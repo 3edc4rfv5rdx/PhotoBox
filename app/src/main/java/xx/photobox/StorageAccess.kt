@@ -45,6 +45,10 @@ fun pathOnVolume(dir: File, volume: File): String {
     return if (dir.path.startsWith(prefix)) dir.path.removePrefix(prefix) else dir.path
 }
 
+/** The phone's own storage, "/storage/emulated/0" — the volume a path is shown without. */
+fun primaryVolume(context: Context): File? =
+    context.getSystemService(StorageManager::class.java).primaryStorageVolume.directory
+
 /** The root of the volume [file] is on — where its trash is, so moving a photo there is a rename, never a copy. */
 fun volumeRootOf(context: Context, file: File): File? =
     context.getSystemService(StorageManager::class.java).getStorageVolume(file)?.directory

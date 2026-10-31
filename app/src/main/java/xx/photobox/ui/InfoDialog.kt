@@ -27,6 +27,8 @@ import xx.photobox.FileInfo
 import xx.photobox.R
 import xx.photobox.exposureText
 import xx.photobox.megapixelsText
+import xx.photobox.pathOnVolume
+import xx.photobox.primaryVolume
 import xx.photobox.readFileInfo
 import xx.photobox.trimmedNumber
 import java.io.File
@@ -59,7 +61,9 @@ fun InfoDialog(file: File, onDismiss: () -> Unit, shownAs: File = file) {
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     InfoLine(stringResource(R.string.info_name), shownAs.name)
-                    InfoLine(stringResource(R.string.info_folder), shownAs.parent.orEmpty())
+                    // On the phone's own storage the folder is shown from there, "DCIM/Camera"; on a card in full, which says it is the card.
+                    val folder = shownAs.parentFile?.let { dir -> primaryVolume(context)?.let { pathOnVolume(dir, it) } ?: dir.path }
+                    InfoLine(stringResource(R.string.info_folder), folder.orEmpty())
                     InfoLine(stringResource(R.string.info_size), formatSize(context, i.size))
                     if (i.width != null && i.height != null) {
                         val size = "${i.width} × ${i.height}"
