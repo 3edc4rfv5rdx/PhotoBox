@@ -58,6 +58,7 @@ class MainActivity : ComponentActivity() {
         // Looks for a newer build in this app's own GitHub release and asks
         // before it downloads anything — not while another app waits on a pick.
         if (pick == null) Updater.checkOnStart(this, UPDATER_CONFIG)
+        viewModel.remembersAlbum = pick == null
         applyWindowTheme()
 
         setContent {

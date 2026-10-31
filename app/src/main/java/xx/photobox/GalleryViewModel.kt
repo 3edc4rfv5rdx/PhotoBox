@@ -167,9 +167,16 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
         return if (saved != null) File(saved).takeIf { it.isDirectory } else cameraAlbum()
     }
 
+    /**
+     * Whether an album opened here is kept as the one the gallery opens next.
+     * Not for a pick request from another app — its own activity, its own
+     * model: it starts from the gallery's album but leaves it as it was.
+     */
+    var remembersAlbum = true
+
     fun openAlbum(dir: File) {
         album = dir
-        AppSettings.setAlbumPath(getApplication(), dir.path)
+        if (remembersAlbum) AppSettings.setAlbumPath(getApplication(), dir.path)
     }
 
     /**
