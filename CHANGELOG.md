@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+- E: With the phone's storage full, opening an album no longer crashes the app
 - E: A file put where another one was is no longer shown with the old one's picture
 - R: The progress display takes its size from where it is used, as Compose expects
 - R: The slideshow's blurred background scales through core-ktx
