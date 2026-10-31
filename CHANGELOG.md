@@ -3,6 +3,7 @@
 > N=new feature, E=error fix, F=fine-tune, R=refactor, I=infrastructure
 
 ## Unreleased
+## v0.4.48 (2026-10-31)
 - E: An air mouse on a TV box scrolls lists and pages photos by dragging with its button held
 - F: Dialog Cancel buttons and the other lilac touches take the chosen accent colour
 - F: Info shows the folder of a photo on the phone's own storage without /storage/emulated/0
