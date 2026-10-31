@@ -153,4 +153,19 @@ class AlbumsTest {
         // A parent added after its child takes its place.
         assertEquals(listOf("/s"), normalizeRoots(listOf("/s/DCIM", "/s")))
     }
+
+    @Test
+    fun aRenamedFolderTakesWhatIsInsideItAlong() {
+        assertEquals("/a/c", repointed("/a/b", "/a/b", "/a/c"))
+        assertEquals("/a/c/x/y.jpg", repointed("/a/b/x/y.jpg", "/a/b", "/a/c"))
+        // Only a name that starts the same: another folder, left alone.
+        assertEquals("/a/bc", repointed("/a/bc", "/a/b", "/a/c"))
+        assertEquals("/z", repointed("/z", "/a/b", "/a/c"))
+    }
+
+    @Test
+    fun aRenamedRootStaysWhereItWasInTheList() {
+        assertEquals(listOf("/x", "/a/c", "/y"), repointedRoots(listOf("/x", "/a/b", "/y"), "/a/b", "/a/c"))
+        assertEquals(listOf("/x", "/y"), repointedRoots(listOf("/x", "/y"), "/a/b", "/a/c"))
+    }
 }

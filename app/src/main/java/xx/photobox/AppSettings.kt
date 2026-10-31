@@ -243,6 +243,23 @@ object AppSettings {
         prefs(context).edit { putString(KEY_ROOTS, clean.joinToString("\n")) }
     }
 
+    /**
+     * Every path kept here that names the folder [from] or lies inside it —
+     * the album open last, the last slideshow's album and photo, the search
+     * roots — moved over to [to], after the app renamed that folder.
+     */
+    fun followRename(context: Context, from: File, to: File) {
+        fun moved(path: String) = repointed(path, from.path, to.path)
+        val roots = repointedRoots(_roots.value, from.path, to.path)
+        if (roots != _roots.value) setRoots(context, roots)
+        val prefs = prefs(context)
+        prefs.edit {
+            prefs.getString(KEY_ALBUM_PATH, null)?.let { putString(KEY_ALBUM_PATH, moved(it)) }
+            prefs.getString(KEY_SLIDESHOW_ALBUM, null)?.let { putString(KEY_SLIDESHOW_ALBUM, moved(it)) }
+            prefs.getString(KEY_SLIDESHOW_PHOTO, null)?.let { putString(KEY_SLIDESHOW_PHOTO, moved(it)) }
+        }
+    }
+
     /** Whether the old per-folder trashes have been carried over to the one per volume. */
     fun trashMigrated(context: Context): Boolean = prefs(context).getBoolean(KEY_TRASH_MIGRATED, false)
 

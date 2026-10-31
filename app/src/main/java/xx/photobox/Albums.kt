@@ -71,6 +71,21 @@ object AlbumScanner {
 }
 
 /**
+ * [path] after the folder [from] became [to]: [to] for the folder itself, the
+ * same place under [to] for anything inside it, and any other path — a
+ * sibling whose name only starts the same among them — as it was.
+ */
+fun repointed(path: String, from: String, to: String): String = when {
+    path == from -> to
+    path.startsWith("$from/") -> to + path.substring(from.length)
+    else -> path
+}
+
+/** The search [roots] after the folder [from] became [to], each where it was in the list. */
+fun repointedRoots(roots: List<String>, from: String, to: String): List<String> =
+    normalizeRoots(roots.map { repointed(it, from, to) })
+
+/**
  * [paths] as search roots: each once, in the order given, and none that lies
  * inside another — its albums are found under that one already, and would
  * otherwise be listed twice.

@@ -288,11 +288,12 @@ class GalleryViewModel(application: Application) : AndroidViewModel(application)
                 }
             }
             if (ok) {
-                val app = getApplication<Application>()
-                AppSettings.slideshowFrame(app, dir)?.let { photo ->
-                    AppSettings.setSlideshowFrame(app, renamed, File(renamed, File(photo).name).path)
+                AppSettings.followRename(getApplication(), dir, renamed)
+                // The open album follows when it is the one renamed or lies inside it.
+                album?.let { open ->
+                    val moved = File(repointed(open.path, dir.path, renamed.path))
+                    if (moved != open) openAlbum(moved)
                 }
-                if (album == dir) openAlbum(renamed)
                 scanAlbums(restart = true)
             }
             onDone(renamed.takeIf { ok })

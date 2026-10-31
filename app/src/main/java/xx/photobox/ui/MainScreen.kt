@@ -59,6 +59,7 @@ import xx.photobox.canRotate
 import xx.photobox.checkAlbumRename
 import xx.photobox.checkRename
 import xx.photobox.filterItems
+import xx.photobox.repointed
 import xx.photobox.sortItems
 import java.io.File
 
@@ -633,7 +634,15 @@ fun MainScreen(
             suffix = null,
             check = { checkAlbumRename(dir, it) },
             onRename = { name, onFailed ->
-                vm.renameAlbum(dir, name) { renamed -> if (renamed == null) onFailed() else renamingAlbum = null }
+                vm.renameAlbum(dir, name) { renamed ->
+                    if (renamed == null) {
+                        onFailed()
+                    } else {
+                        renamingAlbum = null
+                        // The viewer follows a file inside the renamed folder.
+                        viewerPath = viewerPath?.let { repointed(it, dir.path, renamed.path) }
+                    }
+                }
             },
             onDismiss = { renamingAlbum = null },
         )
