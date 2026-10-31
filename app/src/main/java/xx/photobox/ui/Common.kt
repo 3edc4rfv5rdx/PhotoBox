@@ -68,6 +68,9 @@ import xx.photobox.ACCENT_COUNT
 import xx.photobox.R
 import xx.photobox.ThemeMode
 import java.text.NumberFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 // ---------- Theme ----------
@@ -150,12 +153,15 @@ fun PhotoBoxTheme(themeMode: ThemeMode, accentIndex: Int, content: @Composable (
 /** A file size the way the system's own screens write it. */
 fun formatSize(context: Context, bytes: Long): String = Formatter.formatShortFileSize(context, bytes)
 
-/** A moment with its date, year and time, in the phone's own way of writing them. */
-fun formatDateTime(context: Context, millis: Long): String = DateUtils.formatDateTime(
-    context,
-    millis,
-    DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_YEAR or DateUtils.FORMAT_SHOW_TIME,
-)
+/** A moment's time of day, always on the 24-hour clock, whatever the phone is set to. */
+private val CLOCK_24H: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.ROOT)
+
+/** A moment with its date and year in the phone's own way of writing them, and its time on the 24-hour clock. */
+fun formatDateTime(context: Context, millis: Long): String {
+    val date = DateUtils.formatDateTime(context, millis, DateUtils.FORMAT_SHOW_DATE or DateUtils.FORMAT_SHOW_YEAR)
+    val time = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(CLOCK_24H)
+    return "$date, $time"
+}
 
 /** A playing time as a clock: m:ss, or h:mm:ss from an hour up. */
 fun formatClock(millis: Long): String {
