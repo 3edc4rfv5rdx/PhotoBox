@@ -12,6 +12,10 @@ An album is a folder. PhotoBox finds them in the folders you tell it to
 search — DCIM and Pictures to start with — on the phone and the SD card, and
 shows what is really there, hidden folders included if you want them.
 
+| Album | Settings | Trash | Slideshow |
+|---|---|---|---|
+| ![An album's thumbnails, two across, under the folder's name](docs/screens/scr1.jpg) | ![Settings: theme, colour, language, rotation, hidden folders, thumbnails, video player, slideshow time](docs/screens/scr2.jpg) | ![The trash: a deleted photo with its original folder, age and size, and Empty](docs/screens/scr3.jpg) | ![The slideshow with its ⚙ open: shuffle, repeat, caption, pan and zoom, blurred background, time per photo](docs/screens/scr4.jpg) |
+
 ## Features
 
 - **Albums**: one section per search folder, sorted by name, date or file count.
